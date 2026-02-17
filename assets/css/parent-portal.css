@@ -1,0 +1,794 @@
+/**
+ * MFSD Parent Portal Styles
+ * 
+ * Color scheme aligned with MFSD brand:
+ * - Primary: #4F46E5 (Indigo)
+ * - Success: #10B981 (Green)
+ * - Warning: #F59E0B (Amber)
+ * - Info: #3B82F6 (Blue)
+ */
+
+/* ========================================
+   CSS Variables
+   ======================================== */
+.mfsd-pp {
+    --pp-primary: #4F46E5;
+    --pp-primary-light: #EEF2FF;
+    --pp-success: #10B981;
+    --pp-success-light: #D1FAE5;
+    --pp-warning: #F59E0B;
+    --pp-warning-light: #FEF3C7;
+    --pp-danger: #EF4444;
+    --pp-danger-light: #FEE2E2;
+    --pp-gray-50: #F9FAFB;
+    --pp-gray-100: #F3F4F6;
+    --pp-gray-200: #E5E7EB;
+    --pp-gray-300: #D1D5DB;
+    --pp-gray-400: #9CA3AF;
+    --pp-gray-500: #6B7280;
+    --pp-gray-600: #4B5563;
+    --pp-gray-700: #374151;
+    --pp-gray-800: #1F2937;
+    --pp-radius: 12px;
+    --pp-radius-sm: 8px;
+    --pp-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+    --pp-shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+    --pp-transition: 0.2s ease;
+}
+
+/* ========================================
+   Base Container
+   ======================================== */
+.mfsd-pp {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 24px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, sans-serif;
+    color: var(--pp-gray-800);
+    line-height: 1.5;
+}
+
+.mfsd-pp * {
+    box-sizing: border-box;
+}
+
+/* ========================================
+   Header
+   ======================================== */
+.mfsd-pp__header {
+    text-align: center;
+    margin-bottom: 32px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--pp-gray-200);
+}
+
+.mfsd-pp__title {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--pp-gray-800);
+    margin: 0 0 8px 0;
+}
+
+.mfsd-pp__subtitle {
+    font-size: 16px;
+    color: var(--pp-gray-500);
+    margin: 0;
+}
+
+/* ========================================
+   Notices
+   ======================================== */
+.mfsd-pp-notice {
+    padding: 20px 24px;
+    border-radius: var(--pp-radius);
+    margin-bottom: 24px;
+}
+
+.mfsd-pp-notice h3 {
+    margin: 0 0 8px 0;
+    font-size: 18px;
+}
+
+.mfsd-pp-notice p {
+    margin: 0;
+}
+
+.mfsd-pp-notice--warning {
+    background: var(--pp-warning-light);
+    border: 1px solid var(--pp-warning);
+    color: var(--pp-gray-700);
+}
+
+.mfsd-pp-notice--info {
+    background: var(--pp-primary-light);
+    border: 1px solid var(--pp-primary);
+    color: var(--pp-gray-700);
+}
+
+/* ========================================
+   Student Section
+   ======================================== */
+.mfsd-pp__student {
+    margin-bottom: 40px;
+}
+
+.mfsd-pp__student:last-child {
+    margin-bottom: 0;
+}
+
+/* Student Header Card */
+.mfsd-pp__student-header {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    background: linear-gradient(135deg, var(--pp-primary) 0%, #6366F1 100%);
+    padding: 24px;
+    border-radius: var(--pp-radius);
+    color: white;
+    box-shadow: var(--pp-shadow-lg);
+    margin-bottom: 24px;
+}
+
+.mfsd-pp__student-avatar {
+    flex-shrink: 0;
+}
+
+.mfsd-pp__student-avatar img {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    border: 3px solid rgba(255,255,255,0.3);
+    object-fit: cover;
+}
+
+.mfsd-pp__student-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.mfsd-pp__student-name {
+    font-size: 24px;
+    font-weight: 700;
+    margin: 0 0 8px 0;
+    color: white;
+}
+
+.mfsd-pp__student-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.mfsd-pp__meta-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    opacity: 0.9;
+}
+
+.mfsd-pp__meta-item--primary {
+    background: rgba(255,255,255,0.2);
+    padding: 4px 10px;
+    border-radius: 20px;
+}
+
+/* Overall Progress Ring */
+.mfsd-pp__student-overall {
+    flex-shrink: 0;
+    text-align: center;
+}
+
+.mfsd-pp__overall-progress {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.mfsd-pp__progress-ring {
+    width: 80px;
+    height: 80px;
+    position: relative;
+}
+
+.mfsd-pp__progress-ring svg {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+}
+
+.mfsd-pp__progress-bg {
+    fill: none;
+    stroke: rgba(255,255,255,0.2);
+    stroke-width: 3;
+}
+
+.mfsd-pp__progress-fill {
+    fill: none;
+    stroke: white;
+    stroke-width: 3;
+    stroke-linecap: round;
+    transition: stroke-dasharray 0.5s ease;
+}
+
+.mfsd-pp__progress-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.mfsd-pp__progress-label {
+    font-size: 12px;
+    opacity: 0.9;
+}
+
+/* ========================================
+   Week Sections
+   ======================================== */
+.mfsd-pp__weeks {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.mfsd-pp__week {
+    background: white;
+    border-radius: var(--pp-radius);
+    box-shadow: var(--pp-shadow);
+    overflow: hidden;
+    border: 1px solid var(--pp-gray-200);
+}
+
+.mfsd-pp__week--coming-soon {
+    opacity: 0.7;
+}
+
+.mfsd-pp__week-header {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: 16px 20px;
+    background: var(--pp-gray-50);
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    gap: 12px;
+    transition: background var(--pp-transition);
+}
+
+.mfsd-pp__week-header:hover {
+    background: var(--pp-gray-100);
+}
+
+.mfsd-pp__week-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--pp-gray-800);
+    flex: 1;
+}
+
+.mfsd-pp__week-icon {
+    font-size: 20px;
+}
+
+.mfsd-pp__week-summary {
+    flex-shrink: 0;
+}
+
+.mfsd-pp__week-status {
+    font-size: 14px;
+    color: var(--pp-gray-500);
+}
+
+.mfsd-pp__week-status--coming {
+    color: var(--pp-gray-400);
+    font-style: italic;
+}
+
+.mfsd-pp__week-toggle {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    color: var(--pp-gray-400);
+    transition: transform var(--pp-transition);
+}
+
+.mfsd-pp__week-toggle svg {
+    width: 100%;
+    height: 100%;
+}
+
+.mfsd-pp__week-header[aria-expanded="true"] .mfsd-pp__week-toggle {
+    transform: rotate(180deg);
+}
+
+.mfsd-pp__week-content {
+    padding: 20px;
+    border-top: 1px solid var(--pp-gray-200);
+}
+
+.mfsd-pp__week-content[hidden] {
+    display: none;
+}
+
+/* ========================================
+   Activity Cards
+   ======================================== */
+.mfsd-pp__activities {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+}
+
+.mfsd-pp__activity {
+    background: white;
+    border-radius: var(--pp-radius-sm);
+    border: 1px solid var(--pp-gray-200);
+    overflow: hidden;
+    transition: box-shadow var(--pp-transition), border-color var(--pp-transition);
+}
+
+.mfsd-pp__activity:hover {
+    box-shadow: var(--pp-shadow);
+}
+
+.mfsd-pp__activity--completed {
+    border-color: var(--pp-success);
+}
+
+.mfsd-pp__activity--in_progress {
+    border-color: var(--pp-warning);
+}
+
+.mfsd-pp__activity--coming_soon {
+    opacity: 0.6;
+    background: var(--pp-gray-50);
+}
+
+.mfsd-pp__activity-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px;
+    background: var(--pp-gray-50);
+    border-bottom: 1px solid var(--pp-gray-100);
+}
+
+.mfsd-pp__activity-icon {
+    font-size: 28px;
+    line-height: 1;
+}
+
+.mfsd-pp__activity-title-wrap {
+    flex: 1;
+    min-width: 0;
+}
+
+.mfsd-pp__activity-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0 0 4px 0;
+    color: var(--pp-gray-800);
+}
+
+.mfsd-pp__activity-desc {
+    font-size: 13px;
+    color: var(--pp-gray-500);
+    margin: 0;
+}
+
+.mfsd-pp__activity-body {
+    padding: 16px;
+}
+
+.mfsd-pp__activity-body--coming {
+    text-align: center;
+    color: var(--pp-gray-400);
+    font-style: italic;
+}
+
+.mfsd-pp__not-started-text {
+    color: var(--pp-gray-500);
+    margin: 0;
+    font-size: 14px;
+}
+
+/* ========================================
+   Status Badges
+   ======================================== */
+.mfsd-pp__badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.mfsd-pp__badge--not-started {
+    background: var(--pp-gray-100);
+    color: var(--pp-gray-600);
+}
+
+.mfsd-pp__badge--in-progress {
+    background: var(--pp-warning-light);
+    color: #92400E;
+}
+
+.mfsd-pp__badge--completed {
+    background: var(--pp-success-light);
+    color: #065F46;
+}
+
+.mfsd-pp__badge--coming {
+    background: var(--pp-gray-100);
+    color: var(--pp-gray-400);
+}
+
+.mfsd-pp__badge-icon {
+    font-size: 12px;
+}
+
+/* ========================================
+   Progress Bar
+   ======================================== */
+.mfsd-pp__progress-bar-wrap {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.mfsd-pp__progress-bar {
+    flex: 1;
+    height: 8px;
+    background: var(--pp-gray-200);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.mfsd-pp__progress-bar-fill {
+    height: 100%;
+    background: var(--pp-warning);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.mfsd-pp__progress-percent {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--pp-gray-600);
+    min-width: 40px;
+    text-align: right;
+}
+
+.mfsd-pp__progress-note {
+    font-size: 13px;
+    color: var(--pp-gray-500);
+    margin: 0;
+}
+
+/* ========================================
+   Results Sections
+   ======================================== */
+.mfsd-pp__results {
+    font-size: 14px;
+}
+
+.mfsd-pp__results-summary {
+    margin: 0 0 12px 0;
+    color: var(--pp-gray-600);
+}
+
+.mfsd-pp__results-context {
+    font-size: 13px;
+    color: var(--pp-gray-500);
+    margin: 0 0 12px 0;
+}
+
+/* AI Summary Box */
+.mfsd-pp__ai-summary {
+    background: linear-gradient(135deg, #EEF2FF 0%, #F5F3FF 100%);
+    border-radius: var(--pp-radius-sm);
+    padding: 16px;
+    margin-bottom: 12px;
+    border: 1px solid #E0E7FF;
+}
+
+.mfsd-pp__ai-summary-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 10px 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--pp-primary);
+}
+
+.mfsd-pp__ai-icon {
+    font-size: 18px;
+}
+
+.mfsd-pp__ai-summary-content {
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--pp-gray-700);
+}
+
+.mfsd-pp__ai-summary-content p {
+    margin: 0 0 10px 0;
+}
+
+.mfsd-pp__ai-summary-content p:last-child {
+    margin-bottom: 0;
+}
+
+/* Details/Accordion */
+.mfsd-pp__details {
+    margin-top: 12px;
+}
+
+.mfsd-pp__details summary {
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--pp-primary);
+    font-weight: 500;
+    padding: 8px 0;
+}
+
+.mfsd-pp__details summary:hover {
+    text-decoration: underline;
+}
+
+.mfsd-pp__details[open] summary {
+    margin-bottom: 12px;
+}
+
+/* Word Association Results */
+.mfsd-pp__word-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.mfsd-pp__word-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 12px;
+    background: var(--pp-gray-50);
+    border-radius: var(--pp-radius-sm);
+}
+
+.mfsd-pp__word-prompt {
+    font-weight: 600;
+    color: var(--pp-gray-700);
+    min-width: 80px;
+}
+
+.mfsd-pp__word-responses {
+    color: var(--pp-gray-600);
+    font-size: 13px;
+}
+
+/* Junk Jobs Results */
+.mfsd-pp__jobs-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.mfsd-pp__job-item {
+    padding: 10px 12px;
+    background: var(--pp-gray-50);
+    border-radius: var(--pp-radius-sm);
+}
+
+.mfsd-pp__job-name {
+    display: block;
+    font-weight: 600;
+    color: var(--pp-gray-700);
+    margin-bottom: 4px;
+}
+
+.mfsd-pp__job-reason {
+    display: block;
+    font-size: 13px;
+    color: var(--pp-gray-500);
+    font-style: italic;
+}
+
+/* Personality Results */
+.mfsd-pp__personality-type {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.mfsd-pp__mbti-badge {
+    display: inline-block;
+    padding: 8px 16px;
+    background: var(--pp-primary);
+    color: white;
+    font-size: 20px;
+    font-weight: 700;
+    border-radius: var(--pp-radius-sm);
+    letter-spacing: 2px;
+}
+
+.mfsd-pp__disc-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 8px 16px;
+    background: var(--pp-gray-100);
+    color: var(--pp-gray-700);
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: var(--pp-radius-sm);
+}
+
+/* DISC Score Bars */
+.mfsd-pp__disc-scores {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.mfsd-pp__disc-score {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.mfsd-pp__disc-letter {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+    border-radius: 4px;
+    color: white;
+}
+
+.mfsd-pp__disc-score:nth-child(1) .mfsd-pp__disc-letter { background: #EF4444; }
+.mfsd-pp__disc-score:nth-child(2) .mfsd-pp__disc-letter { background: #F59E0B; }
+.mfsd-pp__disc-score:nth-child(3) .mfsd-pp__disc-letter { background: #10B981; }
+.mfsd-pp__disc-score:nth-child(4) .mfsd-pp__disc-letter { background: #3B82F6; }
+
+.mfsd-pp__disc-bar {
+    flex: 1;
+    height: 12px;
+    background: var(--pp-gray-200);
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.mfsd-pp__disc-bar-fill {
+    height: 100%;
+    border-radius: 6px;
+    transition: width 0.3s ease;
+}
+
+.mfsd-pp__disc-bar-fill--d { background: #EF4444; }
+.mfsd-pp__disc-bar-fill--i { background: #F59E0B; }
+.mfsd-pp__disc-bar-fill--s { background: #10B981; }
+.mfsd-pp__disc-bar-fill--c { background: #3B82F6; }
+
+.mfsd-pp__disc-value {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--pp-gray-600);
+    min-width: 40px;
+    text-align: right;
+}
+
+/* RAG Results */
+.mfsd-pp__rag-overview {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.mfsd-pp__rag-score {
+    text-align: center;
+    padding: 12px 20px;
+    background: var(--pp-primary-light);
+    border-radius: var(--pp-radius-sm);
+}
+
+.mfsd-pp__rag-score-value {
+    display: block;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--pp-primary);
+}
+
+.mfsd-pp__rag-score-label {
+    font-size: 12px;
+    color: var(--pp-gray-500);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.mfsd-pp__rag-breakdown {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.mfsd-pp__rag-item {
+    padding: 6px 12px;
+    border-radius: var(--pp-radius-sm);
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.mfsd-pp__rag-item--green {
+    background: var(--pp-success-light);
+    color: #065F46;
+}
+
+.mfsd-pp__rag-item--amber {
+    background: var(--pp-warning-light);
+    color: #92400E;
+}
+
+.mfsd-pp__rag-item--red {
+    background: var(--pp-danger-light);
+    color: #991B1B;
+}
+
+/* ========================================
+   Responsive
+   ======================================== */
+@media (max-width: 768px) {
+    .mfsd-pp {
+        padding: 16px;
+    }
+    
+    .mfsd-pp__student-header {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .mfsd-pp__student-meta {
+        justify-content: center;
+    }
+    
+    .mfsd-pp__activities {
+        grid-template-columns: 1fr;
+    }
+    
+    .mfsd-pp__week-header {
+        flex-wrap: wrap;
+    }
+    
+    .mfsd-pp__week-title {
+        width: 100%;
+        margin-bottom: 8px;
+    }
+    
+    .mfsd-pp__personality-type {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .mfsd-pp__rag-overview {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}
