@@ -753,7 +753,7 @@
 }
 
 /* ========================================
-   Responsive
+   Responsive - Tablet
    ======================================== */
 @media (max-width: 768px) {
     .mfsd-pp {
@@ -778,8 +778,8 @@
     }
     
     .mfsd-pp__week-title {
-        width: 100%;
-        margin-bottom: 8px;
+        flex: 1;
+        min-width: 0;
     }
     
     .mfsd-pp__personality-type {
@@ -790,5 +790,214 @@
     .mfsd-pp__rag-overview {
         flex-direction: column;
         align-items: stretch;
+    }
+}
+
+/* ========================================
+   Responsive - Mobile
+   ======================================== */
+@media (max-width: 480px) {
+    .mfsd-pp {
+        padding: 12px;
+    }
+    
+    .mfsd-pp__header {
+        margin-bottom: 20px;
+        padding-bottom: 16px;
+    }
+    
+    .mfsd-pp__title {
+        font-size: 22px;
+    }
+    
+    .mfsd-pp__subtitle {
+        font-size: 14px;
+    }
+    
+    /* Student Header - Stack vertically */
+    .mfsd-pp__student-header {
+        padding: 16px;
+        gap: 16px;
+    }
+    
+    .mfsd-pp__student-avatar img {
+        width: 60px;
+        height: 60px;
+    }
+    
+    .mfsd-pp__student-name {
+        font-size: 18px;
+    }
+    
+    .mfsd-pp__student-meta {
+        gap: 8px;
+    }
+    
+    .mfsd-pp__meta-item {
+        font-size: 12px;
+    }
+    
+    /* Progress ring smaller on mobile */
+    .mfsd-pp__progress-ring {
+        width: 60px;
+        height: 60px;
+    }
+    
+    .mfsd-pp__progress-text {
+        font-size: 14px;
+    }
+    
+    .mfsd-pp__progress-label {
+        font-size: 11px;
+    }
+    
+    /* Week sections */
+    .mfsd-pp__weeks {
+        gap: 12px;
+    }
+    
+    .mfsd-pp__week-header {
+        padding: 12px 14px;
+        gap: 8px;
+        flex-wrap: nowrap;
+    }
+    
+    .mfsd-pp__week-title {
+        font-size: 15px;
+        flex: 1;
+        min-width: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    .mfsd-pp__week-icon {
+        font-size: 16px;
+        flex-shrink: 0;
+    }
+    
+    .mfsd-pp__week-summary {
+        display: none;
+    }
+    
+    .mfsd-pp__week-toggle {
+        width: 20px;
+        height: 20px;
+        flex-shrink: 0;
+    }
+    
+    .mfsd-pp__week-content {
+        padding: 12px;
+    }
+    
+    /* Activity cards - single column, compact */
+    .mfsd-pp__activities {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    
+    .mfsd-pp__activity-header {
+        padding: 12px;
+        gap: 10px;
+        flex-wrap: nowrap;
+    }
+    
+    .mfsd-pp__activity-icon {
+        font-size: 24px;
+        flex-shrink: 0;
+    }
+    
+    .mfsd-pp__activity-title-wrap {
+        flex: 1;
+        min-width: 0;
+    }
+    
+    .mfsd-pp__activity-title {
+        font-size: 14px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    .mfsd-pp__activity-desc {
+        font-size: 12px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    .mfsd-pp__badge {
+        padding: 3px 8px;
+        font-size: 11px;
+        flex-shrink: 0;
+    }
+    
+    .mfsd-pp__activity-body {
+        padding: 12px;
+    }
+    
+    .mfsd-pp__not-started-text {
+        font-size: 13px;
+    }
+    
+    /* Results sections */
+    .mfsd-pp__ai-summary {
+        padding: 12px;
+    }
+    
+    .mfsd-pp__ai-summary-title {
+        font-size: 13px;
+    }
+    
+    .mfsd-pp__ai-summary-content {
+        font-size: 13px;
+    }
+    
+    .mfsd-pp__mbti-badge {
+        font-size: 16px;
+        padding: 6px 12px;
+    }
+    
+    .mfsd-pp__disc-scores {
+        gap: 6px;
+    }
+    
+    .mfsd-pp__disc-letter {
+        width: 20px;
+        height: 20px;
+        font-size: 12px;
+    }
+    
+    .mfsd-pp__disc-bar {
+        height: 10px;
+    }
+    
+    .mfsd-pp__disc-value {
+        font-size: 12px;
+        min-width: 35px;
+    }
+    
+    .mfsd-pp__rag-score-value {
+        font-size: 22px;
+    }
+    
+    .mfsd-pp__rag-breakdown {
+        gap: 8px;
+    }
+    
+    .mfsd-pp__rag-item {
+        padding: 4px 10px;
+        font-size: 12px;
+    }
+    
+    /* Word list compact */
+    .mfsd-pp__word-item {
+        flex-direction: column;
+        gap: 4px;
+        padding: 8px 10px;
+    }
+    
+    .mfsd-pp__word-prompt {
+        min-width: auto;
     }
 }

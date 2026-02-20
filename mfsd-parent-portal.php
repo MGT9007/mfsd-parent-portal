@@ -3,7 +3,7 @@
  * Plugin Name: MFSD Parent Portal
  * Plugin URI: https://mfsd.me
  * Description: Parent dashboard to view linked student progress in the High Performance Pathway
- * Version: 1.0.1
+ * Version: 1.0.2
  * Author: MisterT9007
  * Author URI: https://mfsd.me
  * Text Domain: mfsd-parent-portal
@@ -14,7 +14,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Plugin constants
-define('MFSD_PARENT_PORTAL_VERSION', '1.0.1');
+define('MFSD_PARENT_PORTAL_VERSION', '1.0.2');
 define('MFSD_PARENT_PORTAL_PATH', plugin_dir_path(__FILE__));
 define('MFSD_PARENT_PORTAL_URL', plugin_dir_url(__FILE__));
 
