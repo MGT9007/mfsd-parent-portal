@@ -1,6 +1,10 @@
 <?php
 /**
  * Parent Portal Data Layer
+ *
+ * Status resolution order:
+ *   1. wp_mfsd_task_progress  → authoritative for locked / available
+ *   2. Plugin-specific tables → used for in_progress detail and completed results
  */
 
 if (!defined('ABSPATH')) exit;
@@ -9,50 +13,54 @@ class MFSD_Parent_Portal_Data {
 
     private $wpdb;
 
+    // Display metadata for each activity.
+    // 'task_slug' maps to the value stored in wp_mfsd_task_progress.task_slug
+    // (only needed when it differs from the array key).
     private $activities = [
         1 => [
             'word_association' => [
                 'name'        => 'Word Association',
                 'icon'        => '💭',
-                'description' => 'Exploring thought patterns and associations'
+                'description' => 'Exploring thought patterns and associations',
             ],
             'junk_jobs' => [
                 'name'        => 'Junk Jobs',
                 'icon'        => '🗑️',
-                'description' => 'Identifying careers to avoid'
+                'description' => 'Identifying careers to avoid',
             ],
             'personality_test_mbti' => [
                 'name'        => 'Personality Test (MBTI)',
                 'icon'        => '🧠',
-                'description' => 'Myers-Briggs personality assessment'
+                'description' => 'Myers-Briggs personality assessment',
+                'task_slug'   => 'personality_test', // slug used in task_progress table
             ],
             'weekly_rag' => [
                 'name'        => 'Weekly Check-in',
                 'icon'        => '🚦',
-                'description' => 'Red/Amber/Green weekly reflection'
+                'description' => 'Red/Amber/Green weekly reflection',
             ],
             'super_strengths' => [
                 'name'        => 'Super Strengths',
                 'icon'        => '💪',
-                'description' => 'Discovering personal strengths'
-            ]
+                'description' => 'Discovering personal strengths',
+            ],
         ],
         2 => [
             'placeholder' => [
                 'name'        => 'Week 2 Activities',
                 'icon'        => '📚',
                 'description' => 'Coming soon',
-                'coming_soon' => true
-            ]
+                'coming_soon' => true,
+            ],
         ],
         3 => [
             'placeholder' => [
                 'name'        => 'Week 3 Activities',
                 'icon'        => '📚',
                 'description' => 'Coming soon',
-                'coming_soon' => true
-            ]
-        ]
+                'coming_soon' => true,
+            ],
+        ],
     ];
 
     public function __construct() {
@@ -60,8 +68,9 @@ class MFSD_Parent_Portal_Data {
         $this->wpdb = $wpdb;
     }
 
+    // ── Linking table ─────────────────────────────────────────────────────────
     public function get_linked_students($parent_user_id) {
-        $table = $this->wpdb->prefix . 'mfsd_parent_student_links';
+        $table   = $this->wpdb->prefix . 'mfsd_parent_student_links';
         $results = $this->wpdb->get_results($this->wpdb->prepare(
             "SELECT psl.*, u.display_name AS student_name, u.user_email AS student_email
              FROM {$table} psl
@@ -86,30 +95,90 @@ class MFSD_Parent_Portal_Data {
         return array_keys($this->activities);
     }
 
+    // ── Master progress builder ───────────────────────────────────────────────
     public function get_student_progress($student_id) {
         $progress = [];
+
         foreach ($this->activities as $week_num => $week_activities) {
             $progress[$week_num] = [];
+
             foreach ($week_activities as $activity_key => $activity_info) {
+
+                // Hard coming-soon (not yet built)
                 if (!empty($activity_info['coming_soon'])) {
                     $progress[$week_num][$activity_key] = [
                         'status' => 'coming_soon',
-                        'info'   => $activity_info
+                        'info'   => $activity_info,
                     ];
                     continue;
                 }
+
+                // Resolve the task_slug for the course management table
+                $task_slug = $activity_info['task_slug'] ?? $activity_key;
+
+                // ── Step 1: check course management tables ─────────────────
+                $cp_status = $this->get_task_progress_status($student_id, $task_slug);
+
+                if ($cp_status === 'locked') {
+                    $progress[$week_num][$activity_key] = [
+                        'status'        => 'locked',
+                        'progress_text' => 'Complete the previous activity to unlock this one.',
+                        'info'          => $activity_info,
+                    ];
+                    continue;
+                }
+
+                if ($cp_status === 'available') {
+                    $progress[$week_num][$activity_key] = [
+                        'status'        => 'not_started',
+                        'progress_text' => 'Not started',
+                        'info'          => $activity_info,
+                    ];
+                    continue;
+                }
+
+                // ── Step 2: in_progress / completed (or no task_progress row)
+                // Call the plugin-specific method for rich data.
                 $method = "get_{$activity_key}_status";
                 if (method_exists($this, $method)) {
                     $status_data         = $this->$method($student_id, $week_num);
                     $status_data['info'] = $activity_info;
+
+                    // If task_progress has a definitive completed flag, honour it
+                    // even if the plugin table disagrees (e.g. edge cases).
+                    if ($cp_status === 'completed' && $status_data['status'] !== 'completed') {
+                        $status_data['status'] = 'completed';
+                    }
+
                     $progress[$week_num][$activity_key] = $status_data;
                 }
             }
         }
+
         return $progress;
     }
 
-    // ── Word Association ──────────────────────────────────────────────────────
+    // ── Course management: read status from wp_mfsd_task_progress ────────────
+    /**
+     * Returns 'locked' | 'available' | 'in_progress' | 'completed' | null
+     * null means the table doesn't exist or no row found (fall through to plugin tables).
+     */
+    private function get_task_progress_status($student_id, $task_slug) {
+        $table = $this->wpdb->prefix . 'mfsd_task_progress';
+        if ($this->wpdb->get_var("SHOW TABLES LIKE '{$table}'") !== $table) {
+            return null;
+        }
+        $status = $this->wpdb->get_var($this->wpdb->prepare(
+            "SELECT status FROM {$table}
+             WHERE student_id = %d AND task_slug = %s
+             ORDER BY id DESC LIMIT 1",
+            $student_id, $task_slug
+        ));
+        return $status ?: null;
+    }
+
+    // ── Plugin-specific status methods ────────────────────────────────────────
+
     private function get_word_association_status($student_id, $week_num = 1) {
         $table = $this->wpdb->prefix . 'mfsd_word_associations';
         if ($this->wpdb->get_var("SHOW TABLES LIKE '{$table}'") !== $table) {
@@ -134,11 +203,10 @@ class MFSD_Parent_Portal_Data {
             'progress'       => $count,
             'progress_text'  => $count . ' words completed',
             'responses'      => $responses,
-            'has_ai_summary' => $with_summary > 0
+            'has_ai_summary' => $with_summary > 0,
         ];
     }
 
-    // ── Junk Jobs ─────────────────────────────────────────────────────────────
     private function get_junk_jobs_status($student_id, $week_num = 1) {
         $table = $this->wpdb->prefix . 'mfsd_ai_junk_jobs_results';
         if ($this->wpdb->get_var("SHOW TABLES LIKE '{$table}'") !== $table) {
@@ -154,24 +222,23 @@ class MFSD_Parent_Portal_Data {
             'not_started' => ['status' => 'not_started', 'step' => 0, 'text' => 'Not started'],
             'in_progress' => ['status' => 'in_progress', 'step' => 1, 'text' => 'Selecting jobs'],
             'reasons'     => ['status' => 'in_progress', 'step' => 2, 'text' => 'Writing reasons'],
-            'completed'   => ['status' => 'completed',   'step' => 4, 'text' => 'Completed']
+            'completed'   => ['status' => 'completed',   'step' => 4, 'text' => 'Completed'],
         ];
         $info = $status_map[$result->status] ?? $status_map['not_started'];
         return [
-            'status'       => $info['status'],
-            'db_status'    => $result->status,
-            'progress'     => $info['step'],
-            'progress_max' => 4,
-            'progress_text'=> $info['text'],
-            'jobs'         => !empty($result->jobs_json)    ? json_decode($result->jobs_json, true)    : [],
-            'ranking'      => !empty($result->ranking_json) ? json_decode($result->ranking_json, true) : [],
-            'reasons'      => !empty($result->reasons_json) ? json_decode($result->reasons_json, true) : [],
-            'analysis'     => $result->analysis,
-            'mbti_type'    => $result->mbti_type
+            'status'        => $info['status'],
+            'db_status'     => $result->status,
+            'progress'      => $info['step'],
+            'progress_max'  => 4,
+            'progress_text' => $info['text'],
+            'jobs'          => !empty($result->jobs_json)    ? json_decode($result->jobs_json, true)    : [],
+            'ranking'       => !empty($result->ranking_json) ? json_decode($result->ranking_json, true) : [],
+            'reasons'       => !empty($result->reasons_json) ? json_decode($result->reasons_json, true) : [],
+            'analysis'      => $result->analysis,
+            'mbti_type'     => $result->mbti_type,
         ];
     }
 
-    // ── Personality Test ──────────────────────────────────────────────────────
     private function get_personality_test_mbti_status($student_id, $week_num = 1) {
         $answers_table = $this->wpdb->prefix . 'mfsd_ptest_answers';
         $results_table = $this->wpdb->prefix . 'mfsd_ptest_results';
@@ -183,19 +250,19 @@ class MFSD_Parent_Portal_Data {
         ));
         if ($result) {
             return [
-                'status'       => 'completed',
-                'progress'     => 12,
-                'progress_max' => 12,
-                'progress_text'=> 'Completed',
-                'mbti_type'    => $result->mbti_type,
-                'ai_summary'   => $result->ai_summary,
-                'disc_scores'  => [
+                'status'        => 'completed',
+                'progress'      => 12,
+                'progress_max'  => 12,
+                'progress_text' => 'Completed',
+                'mbti_type'     => $result->mbti_type,
+                'ai_summary'    => $result->ai_summary,
+                'disc_scores'   => [
                     'D' => $result->disc_d_score,
                     'I' => $result->disc_i_score,
                     'S' => $result->disc_s_score,
-                    'C' => $result->disc_c_score
+                    'C' => $result->disc_c_score,
                 ],
-                'disc_primary' => $result->disc_primary
+                'disc_primary' => $result->disc_primary,
             ];
         }
         $answer_count = $this->wpdb->get_var($this->wpdb->prepare(
@@ -205,22 +272,21 @@ class MFSD_Parent_Portal_Data {
         ));
         if ($answer_count > 0) {
             return [
-                'status'       => 'in_progress',
-                'progress'     => (int) $answer_count,
-                'progress_max' => 12,
-                'progress_text'=> "{$answer_count} of 12 questions"
+                'status'        => 'in_progress',
+                'progress'      => (int) $answer_count,
+                'progress_max'  => 12,
+                'progress_text' => "{$answer_count} of 12 questions",
             ];
         }
         return ['status' => 'not_started', 'progress' => 0, 'progress_max' => 12, 'progress_text' => 'Not started'];
     }
 
-    // ── Weekly RAG ────────────────────────────────────────────────────────────
     private function get_weekly_rag_status($student_id, $week_num = 1) {
         $table = $this->wpdb->prefix . 'mfsd_rag_answers';
         if ($this->wpdb->get_var("SHOW TABLES LIKE '{$table}'") !== $table) {
             return ['status' => 'not_available', 'message' => 'Activity not yet configured'];
         }
-        $answers = $this->wpdb->get_results($this->wpdb->prepare(
+        $answers  = $this->wpdb->get_results($this->wpdb->prepare(
             "SELECT * FROM {$table} WHERE user_id = %d AND week_num = %d ORDER BY question_id ASC",
             $student_id, $week_num
         ));
@@ -237,28 +303,25 @@ class MFSD_Parent_Portal_Data {
         }
         $is_complete = $count >= $expected;
         return [
-            'status'       => $is_complete ? 'completed' : 'in_progress',
-            'progress'     => $count,
-            'progress_max' => $expected,
-            'progress_text'=> $is_complete ? 'Completed' : "{$count} of {$expected} questions",
-            'answers'      => $answers,
-            'total_score'  => $total_score,
-            'breakdown'    => $breakdown
+            'status'        => $is_complete ? 'completed' : 'in_progress',
+            'progress'      => $count,
+            'progress_max'  => $expected,
+            'progress_text' => $is_complete ? 'Completed' : "{$count} of {$expected} questions",
+            'answers'       => $answers,
+            'total_score'   => $total_score,
+            'breakdown'     => $breakdown,
         ];
     }
 
-    // ── Super Strengths ───────────────────────────────────────────────────────
     private function get_super_strengths_status($student_id, $week_num = 1) {
         $players_table = $this->wpdb->prefix . 'mfsd_ss_players';
         $games_table   = $this->wpdb->prefix . 'mfsd_ss_games';
         $cards_table   = $this->wpdb->prefix . 'mfsd_ss_cards';
 
-        // Guard: plugin tables may not exist yet
         if ($this->wpdb->get_var("SHOW TABLES LIKE '{$players_table}'") !== $players_table) {
             return ['status' => 'not_available', 'message' => 'Super Strengths plugin not active'];
         }
 
-        // Find this student's most recent game (any status)
         $player = $this->wpdb->get_row($this->wpdb->prepare(
             "SELECT p.*, g.status AS game_status, g.id AS game_id
              FROM {$players_table} p
@@ -272,14 +335,11 @@ class MFSD_Parent_Portal_Data {
             return ['status' => 'not_started', 'progress_text' => 'Not started'];
         }
 
-        $game_id   = (int) $player['game_id'];
-        $player_id = (int) $player['id'];
-
-        // All players in this game — used for submission status display
+        $game_id     = (int) $player['game_id'];
+        $player_id   = (int) $player['id'];
         $all_players = $this->wpdb->get_results($this->wpdb->prepare(
             "SELECT display_name, role, submission_status
-             FROM {$players_table}
-             WHERE game_id = %d
+             FROM {$players_table} WHERE game_id = %d
              ORDER BY COALESCE(turn_order, id) ASC",
             $game_id
         ), ARRAY_A);
@@ -287,7 +347,6 @@ class MFSD_Parent_Portal_Data {
         $submitted = count(array_filter($all_players, fn($p) => $p['submission_status'] === 'submitted'));
         $total     = count($all_players);
 
-        // ── In progress ───────────────────────────────────────────────────────
         if (in_array($player['game_status'], ['submission', 'dealing', 'playing'])) {
             $labels = [
                 'submission' => 'Writing cards — ' . $submitted . ' of ' . $total . ' submitted',
@@ -304,9 +363,7 @@ class MFSD_Parent_Portal_Data {
             ];
         }
 
-        // ── Complete ──────────────────────────────────────────────────────────
         if ($player['game_status'] === 'complete') {
-            // Cards written about the student by everyone else
             $received = $this->wpdb->get_results($this->wpdb->prepare(
                 "SELECT c.strength_text, p.display_name AS author_name
                  FROM {$cards_table} c
@@ -316,17 +373,13 @@ class MFSD_Parent_Portal_Data {
                 $game_id, $player_id
             ), ARRAY_A);
 
-            // AI summary — cached in user meta to avoid repeated AI calls
             $cache_key  = 'mfsd_ss_ai_' . $game_id . '_' . $student_id;
             $ai_summary = get_user_meta($student_id, $cache_key, true);
-
             if (empty($ai_summary) && !empty($received) && class_exists('MFSD_SS_Game')) {
                 $user_obj   = get_userdata($student_id);
                 $name       = $user_obj ? $user_obj->display_name : 'your child';
                 $ai_summary = MFSD_SS_Game::generate_strengths_summary($received, $name);
-                if ($ai_summary) {
-                    update_user_meta($student_id, $cache_key, $ai_summary);
-                }
+                if ($ai_summary) update_user_meta($student_id, $cache_key, $ai_summary);
             }
 
             return [
