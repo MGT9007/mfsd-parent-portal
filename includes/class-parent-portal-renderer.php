@@ -19,13 +19,145 @@ class MFSD_Parent_Portal_Renderer {
     }
 
     // =========================================================================
-    // PARENT VIEW — one section per linked student
+    // LANDING — STUDENT
     // =========================================================================
-    public function render($linked_students) {
+    public function render_landing_student($student_id) {
+        $courses  = $this->data->get_student_courses($student_id);
+        $page_url = get_permalink();
+        ob_start();
+        ?>
+        <div class="mfsd-pp mfsd-pp--landing mfsd-pp--student">
+            <div class="mfsd-pp__header">
+                <h1 class="mfsd-pp__title">My Courses</h1>
+                <p class="mfsd-pp__subtitle">Your High Performance Pathway journey</p>
+            </div>
+            <?php if (empty($courses)): ?>
+                <div class="mfsd-pp-notice mfsd-pp-notice--info">
+                    <p>You don't have any courses yet. Check back soon!</p>
+                </div>
+            <?php else: ?>
+                <div class="mfsd-pp__course-grid">
+                    <?php foreach ($courses as $course): ?>
+                        <?php $this->render_course_card($course, $page_url, $student_id); ?>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+        </div>
+        <?php
+        return ob_get_clean();
+    }
+
+    // =========================================================================
+    // LANDING — PARENT
+    // =========================================================================
+    public function render_landing_parent($linked_students) {
+        $page_url = get_permalink();
+        ob_start();
+        ?>
+        <div class="mfsd-pp mfsd-pp--landing mfsd-pp--parent">
+            <div class="mfsd-pp__header">
+                <h1 class="mfsd-pp__title">Parent Portal</h1>
+                <p class="mfsd-pp__subtitle">Track your child's progress in the High Performance Pathway</p>
+            </div>
+            <?php foreach ($linked_students as $student): ?>
+                <?php
+                $courses = $this->data->get_student_courses($student->student_user_id);
+                $name    = esc_html($student->student_name);
+                ?>
+                <div class="mfsd-pp__landing-student">
+                    <!-- Student name header -->
+                    <div class="mfsd-pp__landing-student-header">
+                        <img src="<?php echo esc_url($student->avatar_url); ?>"
+                             class="mfsd-pp__landing-avatar" alt="">
+                        <h2 class="mfsd-pp__landing-student-name">
+                            <?php echo $name; ?>'s Courses
+                        </h2>
+                    </div>
+
+                    <?php if (empty($courses)): ?>
+                        <p class="mfsd-pp__not-started-text"><?php echo $name; ?> isn't enrolled on any courses yet.</p>
+                    <?php else: ?>
+                        <div class="mfsd-pp__course-grid">
+                            <?php foreach ($courses as $course): ?>
+                                <?php $this->render_course_card($course, $page_url, $student->student_user_id); ?>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            <?php endforeach; ?>
+        </div>
+        <?php
+        return ob_get_clean();
+    }
+
+    // =========================================================================
+    // COURSE CARD (shared landing component)
+    // =========================================================================
+    private function render_course_card($course, $page_url, $student_id) {
+        $pct      = (int) $course->percent_complete;
+        $detail   = add_query_arg(['course_id' => $course->id, 'student_id' => $student_id], $page_url);
+        $has_img  = !empty($course->image_url);
+
+        // Generate a consistent colour from the course id for the placeholder
+        $colours  = ['#4F46E5','#7C3AED','#0EA5E9','#10B981','#F59E0B','#EF4444'];
+        $bg       = $colours[$course->id % count($colours)];
+        ?>
+        <a href="<?php echo esc_url($detail); ?>" class="mfsd-pp__course-card">
+            <div class="mfsd-pp__course-thumb">
+                <?php if ($has_img): ?>
+                    <img src="<?php echo esc_url($course->image_url); ?>"
+                         alt="<?php echo esc_attr($course->course_name); ?>">
+                <?php else: ?>
+                    <div class="mfsd-pp__course-thumb-placeholder"
+                         style="background:<?php echo $bg; ?>">
+                        <span class="mfsd-pp__course-thumb-initials">
+                            <?php
+                            // First letter of each word, max 2
+                            $words    = explode(' ', $course->course_name);
+                            $initials = implode('', array_map(fn($w) => strtoupper(substr($w, 0, 1)), array_slice($words, 0, 2)));
+                            echo esc_html($initials);
+                            ?>
+                        </span>
+                    </div>
+                <?php endif; ?>
+            </div>
+
+            <div class="mfsd-pp__course-info">
+                <h3 class="mfsd-pp__course-name">
+                    <?php echo esc_html($course->course_name); ?>
+                </h3>
+
+                <div class="mfsd-pp__course-progress">
+                    <div class="mfsd-pp__course-progress-bar">
+                        <div class="mfsd-pp__course-progress-fill"
+                             style="width:<?php echo $pct; ?>%"></div>
+                    </div>
+                    <span class="mfsd-pp__course-progress-pct">
+                        <?php echo $pct; ?>% complete
+                    </span>
+                </div>
+
+                <?php if ($pct === 0): ?>
+                    <span class="mfsd-pp__course-cta">Start course →</span>
+                <?php elseif ($pct < 100): ?>
+                    <span class="mfsd-pp__course-cta">Continue →</span>
+                <?php else: ?>
+                    <span class="mfsd-pp__course-cta mfsd-pp__course-cta--done">✅ Completed</span>
+                <?php endif; ?>
+            </div>
+        </a>
+        <?php
+    }
+
+    // =========================================================================
+    // PARENT VIEW — course detail, one section per linked student
+    // =========================================================================
+    public function render($linked_students, $course_id = 0) {
         ob_start();
         ?>
         <div class="mfsd-pp mfsd-pp--parent">
             <div class="mfsd-pp__header">
+                <?php echo $this->render_back_link(); ?>
                 <h1 class="mfsd-pp__title">Parent Portal</h1>
                 <p class="mfsd-pp__subtitle">Track your child's progress in the High Performance Pathway</p>
             </div>
@@ -38,9 +170,9 @@ class MFSD_Parent_Portal_Renderer {
     }
 
     // =========================================================================
-    // STUDENT SELF-VIEW
+    // STUDENT SELF-VIEW (course detail)
     // =========================================================================
-    public function render_student_self($student_id) {
+    public function render_student_self($student_id, $course_id = 0) {
         $progress = $this->data->get_student_progress($student_id);
         $user     = get_userdata($student_id);
         $name     = $user ? $user->display_name : 'there';
@@ -49,6 +181,7 @@ class MFSD_Parent_Portal_Renderer {
         ?>
         <div class="mfsd-pp mfsd-pp--student">
             <div class="mfsd-pp__header">
+                <?php echo $this->render_back_link(); ?>
                 <h1 class="mfsd-pp__title">My Progress</h1>
                 <p class="mfsd-pp__subtitle">Your High Performance Pathway journey</p>
             </div>
@@ -127,6 +260,14 @@ class MFSD_Parent_Portal_Renderer {
             </div>
         </div>
         <?php
+    }
+
+    // =========================================================================
+    // BACK LINK (detail → landing)
+    // =========================================================================
+    private function render_back_link() {
+        $back = get_permalink();
+        return '<a href="' . esc_url($back) . '" class="mfsd-pp__back-link">← Back to my courses</a>';
     }
 
     // =========================================================================

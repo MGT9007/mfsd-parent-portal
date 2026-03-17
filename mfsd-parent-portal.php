@@ -3,7 +3,7 @@
  * Plugin Name: MFSD Parent Portal
  * Plugin URI: https://mfsd.me
  * Description: Combined parent and student progress portal for the High Performance Pathway
- * Version: 3.0.0
+ * Version: 4.0.0
  * Author: MisterT9007
  * Author URI: https://mfsd.me
  * Text Domain: mfsd-parent-portal
@@ -11,7 +11,7 @@
 
 if (!defined('ABSPATH')) exit;
 
-define('MFSD_PARENT_PORTAL_VERSION', '3.0.0');
+define('MFSD_PARENT_PORTAL_VERSION', '4.0.0');
 define('MFSD_PARENT_PORTAL_PATH',    plugin_dir_path(__FILE__));
 define('MFSD_PARENT_PORTAL_URL',     plugin_dir_url(__FILE__));
 
@@ -66,19 +66,46 @@ class MFSD_Parent_Portal {
         $current_user_id = get_current_user_id();
         $current_user    = wp_get_current_user();
         $roles           = (array) $current_user->roles;
+        $course_id       = isset($_GET['course_id']) ? (int) $_GET['course_id'] : 0;
+        $student_id      = isset($_GET['student_id']) ? (int) $_GET['student_id'] : 0;
 
-        $data = new MFSD_Parent_Portal_Data();
+        $data     = new MFSD_Parent_Portal_Data();
+        $is_student = in_array('student', $roles) && !in_array('administrator', $roles);
 
-        // ── Student view ──────────────────────────────────────────────────────
-        // Pure student role only — parents and admins see the parent view.
-        if (in_array('student', $roles) && !in_array('administrator', $roles)) {
-            $renderer = new MFSD_Parent_Portal_Renderer($data, 'student');
-            return $renderer->render_student_self($current_user_id);
+        // ── Course detail view (course_id present in URL) ─────────────────────
+        if ($course_id) {
+            // Students always view themselves; parents/admins use student_id param
+            $view_student_id = $is_student ? $current_user_id : $student_id;
+
+            if (!$view_student_id) {
+                return '<div class="mfsd-pp-notice mfsd-pp-notice--warning">No student specified.</div>';
+            }
+
+            $renderer = new MFSD_Parent_Portal_Renderer($data, $is_student ? 'student' : 'parent');
+
+            if ($is_student) {
+                return $renderer->render_student_self($current_user_id, $course_id);
+            }
+
+            // Validate parent is actually linked to this student
+            $linked = $data->get_linked_students($current_user_id);
+            $linked_ids = array_column((array) $linked, 'student_user_id');
+            if (!in_array($view_student_id, array_map('intval', $linked_ids))) {
+                return '<div class="mfsd-pp-notice mfsd-pp-notice--warning">Student not found.</div>';
+            }
+
+            $student = current(array_filter((array) $linked, fn($s) => (int)$s->student_user_id === $view_student_id));
+            return $renderer->render([$student], $course_id);
         }
 
-        // ── Parent / admin view ───────────────────────────────────────────────
-        $linked_students = $data->get_linked_students($current_user_id);
+        // ── Landing view (no course_id) ───────────────────────────────────────
+        $renderer = new MFSD_Parent_Portal_Renderer($data, $is_student ? 'student' : 'parent');
 
+        if ($is_student) {
+            return $renderer->render_landing_student($current_user_id);
+        }
+
+        $linked_students = $data->get_linked_students($current_user_id);
         if (empty($linked_students)) {
             return '<div class="mfsd-pp-notice mfsd-pp-notice--info">
                 <h3>No Students Linked</h3>
@@ -86,8 +113,7 @@ class MFSD_Parent_Portal {
             </div>';
         }
 
-        $renderer = new MFSD_Parent_Portal_Renderer($data, 'parent');
-        return $renderer->render($linked_students);
+        return $renderer->render_landing_parent($linked_students);
     }
 }
 

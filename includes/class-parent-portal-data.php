@@ -68,8 +68,62 @@ class MFSD_Parent_Portal_Data {
         $this->wpdb = $wpdb;
     }
 
+    // ── Courses ───────────────────────────────────────────────────────────────
+
+    /**
+     * Get all courses a student is enrolled on, with overall % complete.
+     * Returns array of objects with: id, course_name, image_url, percent_complete, total_tasks, completed_tasks
+     */
+    public function get_student_courses($student_id) {
+        $courses_table  = $this->wpdb->prefix . 'mfsd_courses';
+        $enrol_table    = $this->wpdb->prefix . 'mfsd_enrolments';
+        $progress_table = $this->wpdb->prefix . 'mfsd_task_progress';
+        $order_table    = $this->wpdb->prefix . 'mfsd_task_order';
+
+        // Guard: tables may not exist
+        if ($this->wpdb->get_var("SHOW TABLES LIKE '{$courses_table}'") !== $courses_table) {
+            return [];
+        }
+
+        // Enrolled active courses for this student
+        $courses = $this->wpdb->get_results($this->wpdb->prepare(
+            "SELECT c.id, c.course_name,
+                    COALESCE(c.image_url, '') AS image_url
+             FROM {$courses_table} c
+             JOIN {$enrol_table} e ON e.course_id = c.id
+             WHERE e.student_id = %d AND c.active = 1
+             ORDER BY e.enrolled_date ASC",
+            $student_id
+        ));
+
+        foreach ($courses as &$course) {
+            $course_id = (int) $course->id;
+
+            // Count total active tasks on this course
+            $total = (int) $this->wpdb->get_var($this->wpdb->prepare(
+                "SELECT COUNT(*) FROM {$order_table}
+                 WHERE course_id = %d AND active = 1",
+                $course_id
+            ));
+
+            // Count completed tasks for this student on this course
+            $completed = (int) $this->wpdb->get_var($this->wpdb->prepare(
+                "SELECT COUNT(*) FROM {$progress_table}
+                 WHERE student_id = %d AND course_id = %d AND status = 'completed'",
+                $student_id, $course_id
+            ));
+
+            $course->total_tasks      = $total;
+            $course->completed_tasks  = $completed;
+            $course->percent_complete = $total > 0 ? round(($completed / $total) * 100) : 0;
+        }
+
+        return $courses;
+    }
+
     // ── Linking table ─────────────────────────────────────────────────────────
     public function get_linked_students($parent_user_id) {
+
         $table   = $this->wpdb->prefix . 'mfsd_parent_student_links';
         $results = $this->wpdb->get_results($this->wpdb->prepare(
             "SELECT psl.*, u.display_name AS student_name, u.user_email AS student_email
