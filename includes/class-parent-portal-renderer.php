@@ -289,9 +289,9 @@ class MFSD_Parent_Portal_Renderer {
         <div class="mfsd-pp__overall-progress">
             <div class="mfsd-pp__progress-ring">
                 <svg viewBox="0 0 36 36">
-                    <path class="mfsd-pp__progress-bg"
+                    <path class="mfsd-pp__progress-bg" fill="none"
                         d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
-                    <path class="mfsd-pp__progress-fill"
+                    <path class="mfsd-pp__progress-fill" fill="none"
                         stroke-dasharray="<?php echo $percentage; ?>, 100"
                         d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
                 </svg>
