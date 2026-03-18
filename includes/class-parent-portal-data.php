@@ -85,10 +85,15 @@ class MFSD_Parent_Portal_Data {
             return [];
         }
 
+        // Check whether image_url column exists yet (added during course setup phase)
+        $has_image_col = $this->wpdb->get_results(
+            "SHOW COLUMNS FROM {$courses_table} LIKE 'image_url'"
+        );
+        $image_select = $has_image_col ? 'c.image_url' : "'' AS image_url";
+
         // Enrolled active courses for this student
         $courses = $this->wpdb->get_results($this->wpdb->prepare(
-            "SELECT c.id, c.course_name,
-                    COALESCE(c.image_url, '') AS image_url
+            "SELECT c.id, c.course_name, {$image_select}
              FROM {$courses_table} c
              JOIN {$enrol_table} e ON e.course_id = c.id
              WHERE e.student_id = %d AND c.active = 1
