@@ -102,7 +102,10 @@ class MFSD_Parent_Portal_Renderer {
         $colours  = ['#4F46E5','#7C3AED','#0EA5E9','#10B981','#F59E0B','#EF4444'];
         $bg       = $colours[$course->id % count($colours)];
         ?>
-        <a href="<?php echo esc_url($detail); ?>" class="mfsd-pp__course-card">
+        <a href="<?php echo esc_url($detail); ?>" class="mfsd-pp__course-card"
+           style="display:flex!important;flex-direction:column!important;background:#fff!important;border:1px solid #E5E7EB!important;border-radius:12px!important;overflow:hidden!important;text-decoration:none!important;color:inherit!important;transition:box-shadow .2s,transform .2s!important;"
+           onmouseover="this.style.boxShadow='0 10px 15px -3px rgba(0,0,0,.1)'!important;this.style.transform='translateY(-2px)'!important;"
+           onmouseout="this.style.boxShadow='none'!important;this.style.transform='none'!important;">
             <div class="mfsd-pp__course-thumb">
                 <?php if ($has_img): ?>
                     <img src="<?php echo esc_url($course->image_url); ?>"
@@ -122,27 +125,26 @@ class MFSD_Parent_Portal_Renderer {
                 <?php endif; ?>
             </div>
 
-            <div class="mfsd-pp__course-info">
-                <h3 class="mfsd-pp__course-name">
+            <div style="padding:14px 16px 16px!important;display:flex!important;flex-direction:column!important;gap:10px!important;flex:1!important;">
+                <h3 style="font-size:15px!important;font-weight:600!important;color:#1F2937!important;margin:0!important;line-height:1.3!important;">
                     <?php echo esc_html($course->course_name); ?>
                 </h3>
 
-                <div class="mfsd-pp__course-progress">
-                    <div class="mfsd-pp__course-progress-row">
-                        <div class="mfsd-pp__course-progress-bar">
-                            <div class="mfsd-pp__course-progress-fill"
-                                 style="width:<?php echo $pct; ?>%"></div>
+                <div style="display:flex!important;flex-direction:column!important;gap:6px!important;">
+                    <div style="display:flex!important;align-items:center!important;gap:10px!important;">
+                        <div style="flex:1!important;height:4px!important;background:#E5E7EB!important;border-radius:2px!important;overflow:hidden!important;">
+                            <div style="height:100%!important;width:<?php echo $pct; ?>%!important;background:#6d28d9!important;border-radius:2px!important;transition:width 0.4s ease!important;"></div>
                         </div>
-                        <span class="mfsd-pp__course-progress-pct"><?php echo $pct; ?>% complete</span>
+                        <span style="font-size:12px!important;color:#4B5563!important;font-weight:600!important;white-space:nowrap!important;flex-shrink:0!important;"><?php echo $pct; ?>% complete</span>
                     </div>
                 </div>
 
                 <?php if ($pct === 0): ?>
-                    <span class="mfsd-pp__course-cta">Start course →</span>
+                    <span style="font-size:13px!important;font-weight:600!important;color:#4F46E5!important;">Start course →</span>
                 <?php elseif ($pct < 100): ?>
-                    <span class="mfsd-pp__course-cta">Continue →</span>
+                    <span style="font-size:13px!important;font-weight:600!important;color:#4F46E5!important;">Continue →</span>
                 <?php else: ?>
-                    <span class="mfsd-pp__course-cta mfsd-pp__course-cta--done">✅ Completed</span>
+                    <span style="font-size:13px!important;font-weight:600!important;color:#10B981!important;">✅ Completed</span>
                 <?php endif; ?>
             </div>
         </a>
