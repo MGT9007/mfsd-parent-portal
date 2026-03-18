@@ -30,17 +30,17 @@ class MFSD_Parent_Portal_Data {
                 'task_slug'   => 'personality_test',
                 'url'         => 'https://mfsd.me/my-future-self-foundation-course/week-1/week-1-personality-test/',
             ],
-            'weekly_rag' => [
-                'name'        => 'Weekly Check-in',
-                'icon'        => '🚦',
-                'description' => 'Red/Amber/Green weekly reflection',
-                'url'         => 'https://mfsd.me/my-future-self-foundation-course/week-1/week-1-rag/',
-            ],
             'super_strengths' => [
                 'name'        => 'Super Strengths',
                 'icon'        => '💪',
                 'description' => 'Discovering personal strengths',
                 'url'         => 'https://mfsd.me/my-future-self-foundation-course/week-1/super-strengths/',
+            ],
+            'weekly_rag' => [
+                'name'        => 'Weekly Check-in',
+                'icon'        => '🚦',
+                'description' => 'Red/Amber/Green weekly reflection',
+                'url'         => 'https://mfsd.me/my-future-self-foundation-course/week-1/week-1-rag/',
             ],
         ],
         2 => [
@@ -205,6 +205,22 @@ class MFSD_Parent_Portal_Data {
                     }
 
                     $progress[$week_num][$activity_key] = $status_data;
+                }
+            }
+        }
+
+        // Second pass: lock any not_started activity that follows an incomplete one.
+        // This handles cases where wp_mfsd_task_progress has no row yet for future tasks.
+        $found_incomplete = false;
+        foreach ($progress as $week_num => &$week_activities) {
+            foreach ($week_activities as $key => &$activity) {
+                if (in_array($activity['status'], ['coming_soon', 'not_available', 'locked'])) continue;
+                if ($found_incomplete && $activity['status'] === 'not_started') {
+                    $activity['status']        = 'locked';
+                    $activity['progress_text'] = 'Complete the previous activity to unlock this one.';
+                }
+                if ($activity['status'] !== 'completed') {
+                    $found_incomplete = true;
                 }
             }
         }
