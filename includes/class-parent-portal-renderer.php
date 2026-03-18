@@ -1,8 +1,7 @@
 <?php
 /**
  * Parent Portal Renderer
- * Supports both parent view (linked students) and student self-view.
- *
+ * Supports parent view (linked students) and student self-view.
  * $viewer_role: 'parent' | 'student'
  */
 
@@ -11,7 +10,7 @@ if (!defined('ABSPATH')) exit;
 class MFSD_Parent_Portal_Renderer {
 
     private $data;
-    private $viewer_role; // 'parent' | 'student'
+    private $viewer_role;
 
     public function __construct(MFSD_Parent_Portal_Data $data, $viewer_role = 'parent') {
         $this->data        = $data;
@@ -60,22 +59,17 @@ class MFSD_Parent_Portal_Renderer {
                 <p class="mfsd-pp__subtitle">Track your child's progress in the High Performance Pathway</p>
             </div>
             <?php foreach ($linked_students as $student): ?>
-                <?php
-                $courses = $this->data->get_student_courses($student->student_user_id);
-                $name    = esc_html($student->student_name);
-                ?>
+                <?php $courses = $this->data->get_student_courses($student->student_user_id); ?>
                 <div class="mfsd-pp__landing-student">
-                    <!-- Student name header -->
                     <div class="mfsd-pp__landing-student-header">
                         <img src="<?php echo esc_url($student->avatar_url); ?>"
                              class="mfsd-pp__landing-avatar" alt="">
                         <h2 class="mfsd-pp__landing-student-name">
-                            <?php echo $name; ?>'s Courses
+                            <?php echo esc_html($student->student_name); ?>'s Courses
                         </h2>
                     </div>
-
                     <?php if (empty($courses)): ?>
-                        <p class="mfsd-pp__not-started-text"><?php echo $name; ?> isn't enrolled on any courses yet.</p>
+                        <p class="mfsd-pp__not-started-text"><?php echo esc_html($student->student_name); ?> isn't enrolled on any courses yet.</p>
                     <?php else: ?>
                         <div class="mfsd-pp__course-grid">
                             <?php foreach ($courses as $course): ?>
@@ -91,21 +85,20 @@ class MFSD_Parent_Portal_Renderer {
     }
 
     // =========================================================================
-    // COURSE CARD (shared landing component)
+    // COURSE CARD
     // =========================================================================
     private function render_course_card($course, $page_url, $student_id) {
-        $pct      = (int) $course->percent_complete;
-        $detail   = add_query_arg(['course_id' => $course->id, 'student_id' => $student_id], $page_url);
-        $has_img  = !empty($course->image_url);
-
-        // Generate a consistent colour from the course id for the placeholder
-        $colours  = ['#4F46E5','#7C3AED','#0EA5E9','#10B981','#F59E0B','#EF4444'];
-        $bg       = $colours[$course->id % count($colours)];
+        $pct     = (int) $course->percent_complete;
+        $detail  = add_query_arg(['course_id' => $course->id, 'student_id' => $student_id], $page_url);
+        $has_img = !empty($course->image_url);
+        $colours = ['#4F46E5','#7C3AED','#0EA5E9','#10B981','#F59E0B','#EF4444'];
+        $bg      = $colours[$course->id % count($colours)];
         ?>
         <a href="<?php echo esc_url($detail); ?>" class="mfsd-pp__course-card"
-           style="display:flex!important;flex-direction:column!important;background:#fff!important;border:1px solid #E5E7EB!important;border-radius:12px!important;overflow:hidden!important;text-decoration:none!important;color:inherit!important;transition:box-shadow .2s,transform .2s!important;"
+           style="display:flex!important;flex-direction:column!important;background:#fff!important;border:1px solid #E5E7EB!important;border-radius:12px!important;overflow:hidden!important;text-decoration:none!important;color:inherit!important;"
            onmouseover="this.style.boxShadow='0 10px 15px -3px rgba(0,0,0,.1)'!important;this.style.transform='translateY(-2px)'!important;"
            onmouseout="this.style.boxShadow='none'!important;this.style.transform='none'!important;">
+
             <div class="mfsd-pp__course-thumb">
                 <?php if ($has_img): ?>
                     <img src="<?php echo esc_url($course->image_url); ?>"
@@ -115,7 +108,6 @@ class MFSD_Parent_Portal_Renderer {
                          style="background:<?php echo $bg; ?>">
                         <span class="mfsd-pp__course-thumb-initials">
                             <?php
-                            // First letter of each word, max 2
                             $words    = explode(' ', $course->course_name);
                             $initials = implode('', array_map(fn($w) => strtoupper(substr($w, 0, 1)), array_slice($words, 0, 2)));
                             echo esc_html($initials);
@@ -129,7 +121,6 @@ class MFSD_Parent_Portal_Renderer {
                 <h3 style="font-size:15px!important;font-weight:600!important;color:#1F2937!important;margin:0!important;line-height:1.3!important;">
                     <?php echo esc_html($course->course_name); ?>
                 </h3>
-
                 <div style="display:flex!important;flex-direction:column!important;gap:6px!important;">
                     <div style="display:flex!important;align-items:center!important;gap:10px!important;">
                         <div style="flex:1!important;height:4px!important;background:#E5E7EB!important;border-radius:2px!important;overflow:hidden!important;">
@@ -144,7 +135,7 @@ class MFSD_Parent_Portal_Renderer {
     }
 
     // =========================================================================
-    // PARENT VIEW — course detail, one section per linked student
+    // PARENT VIEW — course detail
     // =========================================================================
     public function render($linked_students, $course_id = 0) {
         ob_start();
@@ -164,20 +155,17 @@ class MFSD_Parent_Portal_Renderer {
     }
 
     // =========================================================================
-    // STUDENT SELF-VIEW (course detail)
-    // Uses the same render_student_section() path as the parent view so the
-    // layout is identical — only the copy differs via $viewer_role = 'student'.
+    // STUDENT SELF-VIEW — course detail
     // =========================================================================
     public function render_student_self($student_id, $course_id = 0) {
         $user = get_userdata($student_id);
 
-        // Build a synthetic student object matching what get_linked_students() returns
-        $student                  = new stdClass();
-        $student->student_user_id = $student_id;
-        $student->student_name    = $user ? $user->display_name : 'Student';
-        $student->year_group      = get_user_meta($student_id, 'year_group', true);
-        $student->school          = get_user_meta($student_id, 'school', true);
-        $student->avatar_url      = get_avatar_url($student_id, ['size' => 80]);
+        $student                     = new stdClass();
+        $student->student_user_id    = $student_id;
+        $student->student_name       = $user ? $user->display_name : 'Student';
+        $student->year_group         = get_user_meta($student_id, 'year_group', true);
+        $student->school             = get_user_meta($student_id, 'school', true);
+        $student->avatar_url         = get_avatar_url($student_id, ['size' => 80]);
         $student->is_primary_contact = false;
 
         ob_start();
@@ -195,7 +183,15 @@ class MFSD_Parent_Portal_Renderer {
     }
 
     // =========================================================================
-    // SHARED: student section (used by parent view)
+    // BACK LINK
+    // =========================================================================
+    private function render_back_link() {
+        $back = get_permalink();
+        return '<a href="' . esc_url($back) . '" class="mfsd-pp__back-link">← Back to my courses</a>';
+    }
+
+    // =========================================================================
+    // STUDENT SECTION (shared by parent and student detail views)
     // =========================================================================
     private function render_student_section($student) {
         $progress       = $this->data->get_student_progress($student->student_user_id);
@@ -219,7 +215,7 @@ class MFSD_Parent_Portal_Renderer {
                         <?php if (!empty($student->school)): ?>
                             <span style="font-size:14px!important;color:rgba(255,255,255,.9)!important;">🏫 <?php echo esc_html($student->school); ?></span>
                         <?php endif; ?>
-                        <?php if ($student->is_primary_contact): ?>
+                        <?php if (!empty($student->is_primary_contact)): ?>
                             <span style="background:rgba(255,255,255,.2)!important;padding:4px 10px!important;border-radius:20px!important;font-size:14px!important;color:#fff!important;">⭐ Primary Contact</span>
                         <?php endif; ?>
                     </div>
@@ -229,7 +225,7 @@ class MFSD_Parent_Portal_Renderer {
                 </div>
             </div>
 
-            <div class="mfsd-pp__weeks" style="display:flex!important;flex-direction:column!important;gap:16px!important;">
+            <div style="display:flex!important;flex-direction:column!important;gap:16px!important;">
                 <?php foreach ($progress as $week_num => $week_progress): ?>
                     <?php $this->render_week_section($week_num, $week_progress); ?>
                 <?php endforeach; ?>
@@ -239,29 +235,10 @@ class MFSD_Parent_Portal_Renderer {
     }
 
     // =========================================================================
-    // BACK LINK (detail → landing)
+    // OVERALL PROGRESS RING — course level %
     // =========================================================================
-    private function render_back_link() {
-        $back = get_permalink();
-        return '<a href="' . esc_url($back) . '" class="mfsd-pp__back-link">← Back to my courses</a>';
-    }
-
-    // =========================================================================
-    // OVERALL PROGRESS RING
-    // =========================================================================
-    private function render_overall_progress($progress) {
-        $total = $completed = 0;
-        foreach ($progress as $week_progress) {
-            foreach ($week_progress as $activity) {
-                if (!in_array($activity['status'], ['coming_soon', 'not_available', 'locked'])) {
-                    $total++;
-                    if ($activity['status'] === 'completed') $completed++;
-                }
-            }
-        }
-        $percentage = $total > 0 ? round(($completed / $total) * 100) : 0;
     private function render_overall_progress($percentage) {
-        $percentage = is_array($percentage) ? 0 : (int) $percentage;
+        $percentage = (int) $percentage;
         ob_start();
         ?>
         <div style="display:flex!important;flex-direction:column!important;align-items:center!important;gap:8px!important;">
@@ -293,7 +270,6 @@ class MFSD_Parent_Portal_Renderer {
         $is_all_coming_soon = $this->is_week_coming_soon($week_progress);
         $expanded           = $week_num === 1;
 
-        // Calculate week-level stats
         $w_completed = $w_total = 0;
         foreach ($week_progress as $activity) {
             if (!in_array($activity['status'], ['coming_soon', 'not_available', 'locked'])) {
@@ -320,7 +296,7 @@ class MFSD_Parent_Portal_Renderer {
                         <span style="font-size:13px!important;color:#9CA3AF!important;font-style:italic!important;">Coming Soon</span>
                     <?php endif; ?>
                 </div>
-                <span class="mfsd-pp__week-toggle" style="flex-shrink:0!important;width:24px!important;height:24px!important;color:#9CA3AF!important;transition:transform .2s!important;">
+                <span class="mfsd-pp__week-toggle" style="flex-shrink:0!important;width:24px!important;height:24px!important;color:#9CA3AF!important;">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
                         <polyline points="6 9 12 15 18 9"></polyline>
                     </svg>
@@ -340,6 +316,9 @@ class MFSD_Parent_Portal_Renderer {
         <?php
     }
 
+    // =========================================================================
+    // HELPERS
+    // =========================================================================
     private function is_week_coming_soon($week_progress) {
         foreach ($week_progress as $a) {
             if ($a['status'] !== 'coming_soon') return false;
@@ -364,14 +343,12 @@ class MFSD_Parent_Portal_Renderer {
     private function get_week_summary($week_progress) {
         $completed = $total = 0;
         foreach ($week_progress as $a) {
-            if (!in_array($a['status'], ['coming_soon', 'not_available', 'locked'])) {
+            if (!in_array($a['status'], ['coming_soon', 'not_available'])) {
                 $total++;
                 if ($a['status'] === 'completed') $completed++;
             }
         }
-        if ($total === 0) {
-            return '<span class="mfsd-pp__week-status mfsd-pp__week-status--coming">Coming Soon</span>';
-        }
+        if ($total === 0) return '<span class="mfsd-pp__week-status mfsd-pp__week-status--coming">Coming Soon</span>';
         return "<span class='mfsd-pp__week-status'>{$completed} of {$total} activities completed</span>";
     }
 
@@ -382,6 +359,9 @@ class MFSD_Parent_Portal_Renderer {
         $status = $activity['status'];
         $info   = $activity['info'] ?? [];
         $s      = $this->viewer_role === 'student';
+        $url    = $info['url'] ?? '';
+
+        $clickable = $url && in_array($status, ['not_started', 'in_progress', 'completed']);
 
         $border_colors = [
             'completed'   => '#10B981',
@@ -391,9 +371,22 @@ class MFSD_Parent_Portal_Renderer {
             'not_started' => '#E5E7EB',
         ];
         $border = $border_colors[$status] ?? '#E5E7EB';
+
+        $card_style = "background:#fff!important;border-radius:8px!important;border:1px solid {$border}!important;overflow:hidden!important;" .
+            (in_array($status, ['coming_soon','locked']) ? 'opacity:.6!important;' : '') .
+            ($clickable ? 'cursor:pointer!important;text-decoration:none!important;color:inherit!important;display:block!important;' : '');
+
+        $tag   = $clickable ? 'a' : 'div';
+        $href  = $clickable ? ' href="' . esc_url($url) . '"' : '';
+        $hover = $clickable
+            ? ' onmouseover="this.style.boxShadow=\'0 4px 12px rgba(0,0,0,.12)\'"
+                onmouseout="this.style.boxShadow=\'none\'"'
+            : '';
         ?>
-        <div class="mfsd-pp__activity" data-activity="<?php echo esc_attr($activity_key); ?>"
-             style="background:#fff!important;border-radius:8px!important;border:1px solid <?php echo $border; ?>!important;overflow:hidden!important;<?php echo in_array($status,['coming_soon','locked']) ? 'opacity:.6!important;' : ''; ?>">
+        <<?php echo $tag; ?> class="mfsd-pp__activity"
+            data-activity="<?php echo esc_attr($activity_key); ?>"
+            <?php echo $href . $hover; ?>
+            style="<?php echo $card_style; ?>">
 
             <div style="display:flex!important;align-items:flex-start!important;gap:12px!important;padding:16px!important;background:#F9FAFB!important;border-bottom:1px solid #F3F4F6!important;">
                 <span style="font-size:28px!important;line-height:1!important;flex-shrink:0!important;"><?php echo $info['icon'] ?? '📝'; ?></span>
@@ -421,6 +414,9 @@ class MFSD_Parent_Portal_Renderer {
                     <p style="color:#6B7280!important;margin:0!important;font-size:14px!important;">
                         <?php echo $s ? "You haven't started this activity yet." : "Your child hasn't started this activity yet."; ?>
                     </p>
+                    <?php if ($clickable): ?>
+                        <p style="margin:8px 0 0!important;font-size:13px!important;font-weight:600!important;color:#4F46E5!important;">Start →</p>
+                    <?php endif; ?>
                 <?php elseif ($status === 'in_progress'): ?>
                     <?php echo $this->render_progress_bar($activity); ?>
                     <p style="font-size:13px!important;color:#6B7280!important;margin:4px 0 0 0!important;">
@@ -429,11 +425,17 @@ class MFSD_Parent_Portal_Renderer {
                     <?php if ($activity_key === 'super_strengths' && !empty($activity['all_players'])): ?>
                         <?php $this->render_ss_player_status($activity['all_players']); ?>
                     <?php endif; ?>
+                    <?php if ($clickable): ?>
+                        <p style="margin:8px 0 0!important;font-size:13px!important;font-weight:600!important;color:#4F46E5!important;">Continue →</p>
+                    <?php endif; ?>
                 <?php elseif ($status === 'completed'): ?>
                     <?php echo $this->render_activity_results($activity_key, $activity); ?>
+                    <?php if ($clickable): ?>
+                        <p style="margin:8px 0 0!important;font-size:13px!important;font-weight:600!important;color:#10B981!important;">View →</p>
+                    <?php endif; ?>
                 <?php endif; ?>
             </div>
-        </div>
+        </<?php echo $tag; ?>>
         <?php
     }
 
@@ -442,12 +444,12 @@ class MFSD_Parent_Portal_Renderer {
     // =========================================================================
     private function render_status_badge($status) {
         $badges = [
-            'not_started'   => ['⭕', 'Not Started',   'mfsd-pp__badge--not-started'],
-            'in_progress'   => ['🔄', 'In Progress',   'mfsd-pp__badge--in-progress'],
-            'completed'     => ['✅', 'Completed',      'mfsd-pp__badge--completed'],
-            'coming_soon'   => ['🔒', 'Coming Soon',    'mfsd-pp__badge--coming'],
-            'locked'        => ['🔒', 'Locked',         'mfsd-pp__badge--coming'],
-            'not_available' => ['❓', 'Not Available',  'mfsd-pp__badge--unavailable'],
+            'not_started'   => ['⭕', 'Not Started',  'mfsd-pp__badge--not-started'],
+            'in_progress'   => ['🔄', 'In Progress',  'mfsd-pp__badge--in-progress'],
+            'completed'     => ['✅', 'Completed',     'mfsd-pp__badge--completed'],
+            'coming_soon'   => ['🔒', 'Coming Soon',   'mfsd-pp__badge--coming'],
+            'locked'        => ['🔒', 'Locked',        'mfsd-pp__badge--coming'],
+            'not_available' => ['❓', 'Not Available', 'mfsd-pp__badge--unavailable'],
         ];
         $badge = $badges[$status] ?? $badges['not_available'];
         return sprintf(
@@ -476,7 +478,7 @@ class MFSD_Parent_Portal_Renderer {
     }
 
     // =========================================================================
-    // RESULTS DISPATCH
+    // ACTIVITY RESULTS DISPATCH
     // =========================================================================
     private function render_activity_results($activity_key, $activity) {
         ob_start();
@@ -492,23 +494,23 @@ class MFSD_Parent_Portal_Renderer {
     }
 
     // =========================================================================
-    // WORD ASSOCIATION RESULTS
+    // WORD ASSOCIATION — count only, no AI summary (link goes to task page)
     // =========================================================================
     private function render_word_association_results($activity) {
         $responses = $activity['responses'] ?? [];
         $s         = $this->viewer_role === 'student';
         ?>
-        <div class="mfsd-pp__results mfsd-pp__results--word-assoc">
-            <p class="mfsd-pp__results-summary">
+        <div class="mfsd-pp__results">
+            <p class="mfsd-pp__results-summary" style="margin:0!important;font-size:14px!important;color:#374151!important;">
                 <strong><?php echo count($responses); ?></strong>
-                <?php echo $s ? 'words you\'ve completed' : 'words completed'; ?>
+                <?php echo $s ? ' words you\'ve completed' : ' words completed'; ?>
             </p>
         </div>
         <?php
     }
 
     // =========================================================================
-    // JUNK JOBS RESULTS
+    // JUNK JOBS
     // =========================================================================
     private function render_junk_jobs_results($activity) {
         $jobs    = $activity['jobs']    ?? [];
@@ -518,8 +520,7 @@ class MFSD_Parent_Portal_Renderer {
         <div class="mfsd-pp__results mfsd-pp__results--junk-jobs">
             <?php if (!empty($activity['mbti_type'])): ?>
                 <p class="mfsd-pp__results-context">
-                    <?php echo $s ? 'Your' : 'Analysis based on'; ?>
-                    analysis based on <strong><?php echo esc_html($activity['mbti_type']); ?></strong> personality type
+                    Analysis based on <strong><?php echo esc_html($activity['mbti_type']); ?></strong> personality type
                 </p>
             <?php endif; ?>
             <?php if (!empty($activity['analysis'])): ?>
@@ -552,10 +553,9 @@ class MFSD_Parent_Portal_Renderer {
     }
 
     // =========================================================================
-    // PERSONALITY RESULTS
+    // PERSONALITY TEST
     // =========================================================================
     private function render_personality_results($activity) {
-        $s = $this->viewer_role === 'student';
         ?>
         <div class="mfsd-pp__results mfsd-pp__results--personality">
             <div class="mfsd-pp__personality-type">
@@ -595,7 +595,7 @@ class MFSD_Parent_Portal_Renderer {
     }
 
     // =========================================================================
-    // RAG RESULTS
+    // WEEKLY RAG
     // =========================================================================
     private function render_rag_results($activity) {
         $breakdown = $activity['breakdown'] ?? [];
@@ -626,7 +626,7 @@ class MFSD_Parent_Portal_Renderer {
     }
 
     // =========================================================================
-    // SUPER STRENGTHS RESULTS
+    // SUPER STRENGTHS
     // =========================================================================
     private function render_super_strengths_results($activity) {
         $received = $activity['received_cards'] ?? [];
@@ -652,15 +652,9 @@ class MFSD_Parent_Portal_Renderer {
                     </summary>
                     <div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:10px;">
                         <?php foreach ($received as $card): ?>
-                            <span style="
-                                display:inline-block;
-                                background:var(--pp-primary-light);
-                                border:1px solid var(--pp-primary);
-                                border-radius:20px;
-                                padding:5px 13px;
-                                font-size:13px;
-                                color:var(--pp-gray-700);
-                            "><?php echo esc_html($card['strength_text']); ?></span>
+                            <span style="display:inline-block;background:var(--pp-primary-light);border:1px solid var(--pp-primary);border-radius:20px;padding:5px 13px;font-size:13px;color:var(--pp-gray-700);">
+                                <?php echo esc_html($card['strength_text']); ?>
+                            </span>
                         <?php endforeach; ?>
                     </div>
                 </details>
@@ -670,7 +664,7 @@ class MFSD_Parent_Portal_Renderer {
     }
 
     // =========================================================================
-    // SUPER STRENGTHS IN-PROGRESS PLAYER PILLS
+    // SUPER STRENGTHS PLAYER STATUS PILLS
     // =========================================================================
     private function render_ss_player_status($all_players) {
         ?>
@@ -681,13 +675,10 @@ class MFSD_Parent_Portal_Renderer {
             <div style="display:flex;flex-wrap:wrap;gap:7px;">
                 <?php foreach ($all_players as $p): ?>
                     <?php $done = $p['submission_status'] === 'submitted'; ?>
-                    <span style="
-                        display:inline-flex;align-items:center;gap:5px;
-                        padding:4px 11px;border-radius:20px;font-size:12px;
+                    <span style="display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:20px;font-size:12px;
                         background:<?php echo $done ? 'var(--pp-success-light)' : 'var(--pp-gray-100)'; ?>;
                         color:<?php echo $done ? '#065F46' : 'var(--pp-gray-600)'; ?>;
-                        border:1px solid <?php echo $done ? 'var(--pp-success)' : 'var(--pp-gray-300)'; ?>;
-                    ">
+                        border:1px solid <?php echo $done ? 'var(--pp-success)' : 'var(--pp-gray-300)'; ?>;">
                         <?php echo $done ? '✅' : '⏳'; ?>
                         <?php echo esc_html($p['display_name']); ?>
                     </span>

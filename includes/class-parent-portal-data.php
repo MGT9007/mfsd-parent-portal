@@ -1,10 +1,6 @@
 <?php
 /**
  * Parent Portal Data Layer
- *
- * Status resolution order:
- *   1. wp_mfsd_task_progress  → authoritative for locked / available
- *   2. Plugin-specific tables → used for in_progress detail and completed results
  */
 
 if (!defined('ABSPATH')) exit;
@@ -13,9 +9,6 @@ class MFSD_Parent_Portal_Data {
 
     private $wpdb;
 
-    // Display metadata for each activity.
-    // 'task_slug' maps to the value stored in wp_mfsd_task_progress.task_slug
-    // (only needed when it differs from the array key).
     private $activities = [
         1 => [
             'word_association' => [
@@ -73,100 +66,8 @@ class MFSD_Parent_Portal_Data {
         $this->wpdb = $wpdb;
     }
 
-    // ── Course-level % (all weeks, from task management tables) ──────────────
-    // This matches the landing page calculation exactly.
-    public function get_course_percent($student_id) {
-        $order_table    = $this->wpdb->prefix . 'mfsd_task_order';
-        $progress_table = $this->wpdb->prefix . 'mfsd_task_progress';
-
-        if ($this->wpdb->get_var("SHOW TABLES LIKE '{$order_table}'") !== $order_table) {
-            return 0;
-        }
-
-        // Get the course this student is enrolled on
-        $enrol_table = $this->wpdb->prefix . 'mfsd_enrolments';
-        $course_id   = (int) $this->wpdb->get_var($this->wpdb->prepare(
-            "SELECT course_id FROM {$enrol_table} WHERE student_id = %d LIMIT 1",
-            $student_id
-        ));
-
-        if (!$course_id) return 0;
-
-        $total = (int) $this->wpdb->get_var($this->wpdb->prepare(
-            "SELECT COUNT(*) FROM {$order_table} WHERE course_id = %d AND active = 1",
-            $course_id
-        ));
-
-        if (!$total) return 0;
-
-        $completed = (int) $this->wpdb->get_var($this->wpdb->prepare(
-            "SELECT COUNT(*) FROM {$progress_table}
-             WHERE student_id = %d AND course_id = %d AND status = 'completed'",
-            $student_id, $course_id
-        ));
-
-        return round(($completed / $total) * 100);
-    }
-
-    // ── Courses ───────────────────────────────────────────────────────────────
-
-    /**
-     * Get all courses a student is enrolled on, with overall % complete.
-     * Returns array of objects with: id, course_name, image_url, percent_complete, total_tasks, completed_tasks
-     */
-    public function get_student_courses($student_id) {
-        $courses_table  = $this->wpdb->prefix . 'mfsd_courses';
-        $enrol_table    = $this->wpdb->prefix . 'mfsd_enrolments';
-        $progress_table = $this->wpdb->prefix . 'mfsd_task_progress';
-        $order_table    = $this->wpdb->prefix . 'mfsd_task_order';
-
-        // Guard: tables may not exist
-        if ($this->wpdb->get_var("SHOW TABLES LIKE '{$courses_table}'") !== $courses_table) {
-            return [];
-        }
-
-        // Check whether image_url column exists yet (added during course setup phase)
-        $has_image_col = $this->wpdb->get_results(
-            "SHOW COLUMNS FROM {$courses_table} LIKE 'image_url'"
-        );
-        $image_select = $has_image_col ? 'c.image_url' : "'' AS image_url";
-
-        // Enrolled active courses for this student
-        $courses = $this->wpdb->get_results($this->wpdb->prepare(
-            "SELECT c.id, c.course_name, {$image_select}
-             FROM {$courses_table} c
-             JOIN {$enrol_table} e ON e.course_id = c.id
-             WHERE e.student_id = %d AND c.active = 1
-             ORDER BY e.enrolled_date ASC",
-            $student_id
-        ));
-
-        foreach ($courses as &$course) {
-            // Use the same plugin-table data source as the detail page
-            // so landing page % always matches the detail page %
-            $progress = $this->get_student_progress($student_id);
-
-            $total = $completed = 0;
-            foreach ($progress as $week_progress) {
-                foreach ($week_progress as $activity) {
-                    if (!in_array($activity['status'], ['coming_soon', 'not_available', 'locked'])) {
-                        $total++;
-                        if ($activity['status'] === 'completed') $completed++;
-                    }
-                }
-            }
-
-            $course->total_tasks      = $total;
-            $course->completed_tasks  = $completed;
-            $course->percent_complete = $total > 0 ? round(($completed / $total) * 100) : 0;
-        }
-
-        return $courses;
-    }
-
     // ── Linking table ─────────────────────────────────────────────────────────
     public function get_linked_students($parent_user_id) {
-
         $table   = $this->wpdb->prefix . 'mfsd_parent_student_links';
         $results = $this->wpdb->get_results($this->wpdb->prepare(
             "SELECT psl.*, u.display_name AS student_name, u.user_email AS student_email
@@ -184,6 +85,70 @@ class MFSD_Parent_Portal_Data {
         return $results;
     }
 
+    // ── Course-level % from task management tables ────────────────────────────
+    // Used by the blue header ring — matches landing page calculation exactly.
+    public function get_course_percent($student_id) {
+        $order_table    = $this->wpdb->prefix . 'mfsd_task_order';
+        $progress_table = $this->wpdb->prefix . 'mfsd_task_progress';
+        $enrol_table    = $this->wpdb->prefix . 'mfsd_enrolments';
+
+        if ($this->wpdb->get_var("SHOW TABLES LIKE '{$order_table}'") !== $order_table) {
+            return 0;
+        }
+
+        $course_id = (int) $this->wpdb->get_var($this->wpdb->prepare(
+            "SELECT course_id FROM {$enrol_table} WHERE student_id = %d LIMIT 1",
+            $student_id
+        ));
+        if (!$course_id) return 0;
+
+        $total = (int) $this->wpdb->get_var($this->wpdb->prepare(
+            "SELECT COUNT(*) FROM {$order_table} WHERE course_id = %d AND active = 1",
+            $course_id
+        ));
+        if (!$total) return 0;
+
+        $completed = (int) $this->wpdb->get_var($this->wpdb->prepare(
+            "SELECT COUNT(*) FROM {$progress_table}
+             WHERE student_id = %d AND course_id = %d AND status = 'completed'",
+            $student_id, $course_id
+        ));
+
+        return round(($completed / $total) * 100);
+    }
+
+    // ── Courses for landing page ──────────────────────────────────────────────
+    public function get_student_courses($student_id) {
+        $courses_table = $this->wpdb->prefix . 'mfsd_courses';
+        $enrol_table   = $this->wpdb->prefix . 'mfsd_enrolments';
+
+        if ($this->wpdb->get_var("SHOW TABLES LIKE '{$courses_table}'") !== $courses_table) {
+            return [];
+        }
+
+        $has_image_col = $this->wpdb->get_results(
+            "SHOW COLUMNS FROM {$courses_table} LIKE 'image_url'"
+        );
+        $image_select = $has_image_col ? 'c.image_url' : "'' AS image_url";
+
+        $courses = $this->wpdb->get_results($this->wpdb->prepare(
+            "SELECT c.id, c.course_name, {$image_select}
+             FROM {$courses_table} c
+             JOIN {$enrol_table} e ON e.course_id = c.id
+             WHERE e.student_id = %d AND c.active = 1
+             ORDER BY e.enrolled_date ASC",
+            $student_id
+        ));
+
+        foreach ($courses as &$course) {
+            $pct = $this->get_course_percent($student_id);
+            $course->percent_complete = $pct;
+        }
+
+        return $courses;
+    }
+
+    // ── Activity definitions ──────────────────────────────────────────────────
     public function get_week_activities($week_num) {
         return $this->activities[$week_num] ?? [];
     }
@@ -201,7 +166,6 @@ class MFSD_Parent_Portal_Data {
 
             foreach ($week_activities as $activity_key => $activity_info) {
 
-                // Hard coming-soon (not yet built)
                 if (!empty($activity_info['coming_soon'])) {
                     $progress[$week_num][$activity_key] = [
                         'status' => 'coming_soon',
@@ -210,10 +174,7 @@ class MFSD_Parent_Portal_Data {
                     continue;
                 }
 
-                // Resolve the task_slug for the course management table
                 $task_slug = $activity_info['task_slug'] ?? $activity_key;
-
-                // ── Step 1: check course management tables ─────────────────
                 $cp_status = $this->get_task_progress_status($student_id, $task_slug);
 
                 if ($cp_status === 'locked') {
@@ -234,15 +195,11 @@ class MFSD_Parent_Portal_Data {
                     continue;
                 }
 
-                // ── Step 2: in_progress / completed (or no task_progress row)
-                // Call the plugin-specific method for rich data.
                 $method = "get_{$activity_key}_status";
                 if (method_exists($this, $method)) {
                     $status_data         = $this->$method($student_id, $week_num);
                     $status_data['info'] = $activity_info;
 
-                    // If task_progress has a definitive completed flag, honour it
-                    // even if the plugin table disagrees (e.g. edge cases).
                     if ($cp_status === 'completed' && $status_data['status'] !== 'completed') {
                         $status_data['status'] = 'completed';
                     }
@@ -255,11 +212,7 @@ class MFSD_Parent_Portal_Data {
         return $progress;
     }
 
-    // ── Course management: read status from wp_mfsd_task_progress ────────────
-    /**
-     * Returns 'locked' | 'available' | 'in_progress' | 'completed' | null
-     * null means the table doesn't exist or no row found (fall through to plugin tables).
-     */
+    // ── Course management: read wp_mfsd_task_progress ─────────────────────────
     private function get_task_progress_status($student_id, $task_slug) {
         $table = $this->wpdb->prefix . 'mfsd_task_progress';
         if ($this->wpdb->get_var("SHOW TABLES LIKE '{$table}'") !== $table) {
@@ -297,7 +250,7 @@ class MFSD_Parent_Portal_Data {
         $with_summary = count(array_filter((array) $responses, fn($r) => !empty($r->ai_summary)));
         return [
             'status'         => $with_summary > 0 ? 'completed' : 'in_progress',
-            'progress'       => $count,
+            'progress'       => (int) $count,
             'progress_text'  => $count . ' words completed',
             'responses'      => $responses,
             'has_ai_summary' => $with_summary > 0,
