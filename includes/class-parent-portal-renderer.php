@@ -133,19 +133,11 @@ class MFSD_Parent_Portal_Renderer {
                 <div style="display:flex!important;flex-direction:column!important;gap:6px!important;">
                     <div style="display:flex!important;align-items:center!important;gap:10px!important;">
                         <div style="flex:1!important;height:4px!important;background:#E5E7EB!important;border-radius:2px!important;overflow:hidden!important;">
-                            <div style="height:100%!important;width:<?php echo $pct; ?>%!important;background:#6d28d9!important;border-radius:2px!important;transition:width 0.4s ease!important;"></div>
+                            <div style="height:100%!important;width:<?php echo $pct; ?>%!important;background:#6d28d9!important;border-radius:2px!important;"></div>
                         </div>
                         <span style="font-size:12px!important;color:#4B5563!important;font-weight:600!important;white-space:nowrap!important;flex-shrink:0!important;"><?php echo $pct; ?>% complete</span>
                     </div>
                 </div>
-
-                <?php if ($pct === 0): ?>
-                    <span style="font-size:13px!important;font-weight:600!important;color:#4F46E5!important;">Start course →</span>
-                <?php elseif ($pct < 100): ?>
-                    <span style="font-size:13px!important;font-weight:600!important;color:#4F46E5!important;">Continue →</span>
-                <?php else: ?>
-                    <span style="font-size:13px!important;font-weight:600!important;color:#10B981!important;">✅ Completed</span>
-                <?php endif; ?>
             </div>
         </a>
         <?php
@@ -496,29 +488,6 @@ class MFSD_Parent_Portal_Renderer {
                 <strong><?php echo count($responses); ?></strong>
                 <?php echo $s ? 'words you\'ve completed' : 'words completed'; ?>
             </p>
-            <?php if (!empty($responses) && !empty($responses[0]->ai_summary)): ?>
-                <div class="mfsd-pp__ai-summary">
-                    <h5 class="mfsd-pp__ai-summary-title">
-                        <span class="mfsd-pp__ai-icon">🤖</span> AI Insights
-                    </h5>
-                    <div class="mfsd-pp__ai-summary-content">
-                        <?php echo wp_kses_post($responses[0]->ai_summary); ?>
-                    </div>
-                </div>
-            <?php endif; ?>
-            <details class="mfsd-pp__details">
-                <summary>View word responses</summary>
-                <div class="mfsd-pp__word-list">
-                    <?php foreach ($responses as $r): ?>
-                        <div class="mfsd-pp__word-item">
-                            <span class="mfsd-pp__word-prompt"><?php echo esc_html($r->word); ?></span>
-                            <span class="mfsd-pp__word-responses">
-                                <?php echo esc_html(implode(', ', array_filter([$r->association_1, $r->association_2, $r->association_3]))); ?>
-                            </span>
-                        </div>
-                    <?php endforeach; ?>
-                </div>
-            </details>
         </div>
         <?php
     }
