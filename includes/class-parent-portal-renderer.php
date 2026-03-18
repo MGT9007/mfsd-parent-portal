@@ -261,6 +261,7 @@ class MFSD_Parent_Portal_Renderer {
         }
         $percentage = $total > 0 ? round(($completed / $total) * 100) : 0;
     private function render_overall_progress($percentage) {
+        $percentage = is_array($percentage) ? 0 : (int) $percentage;
         ob_start();
         ?>
         <div style="display:flex!important;flex-direction:column!important;align-items:center!important;gap:8px!important;">
