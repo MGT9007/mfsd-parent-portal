@@ -171,12 +171,21 @@ class MFSD_Parent_Portal_Renderer {
 
     // =========================================================================
     // STUDENT SELF-VIEW (course detail)
+    // Uses the same render_student_section() path as the parent view so the
+    // layout is identical — only the copy differs via $viewer_role = 'student'.
     // =========================================================================
     public function render_student_self($student_id, $course_id = 0) {
-        $progress = $this->data->get_student_progress($student_id);
-        $user     = get_userdata($student_id);
-        $name     = $user ? $user->display_name : 'there';
-        $avatar   = get_avatar_url($student_id, ['size' => 80]);
+        $user = get_userdata($student_id);
+
+        // Build a synthetic student object matching what get_linked_students() returns
+        $student                  = new stdClass();
+        $student->student_user_id = $student_id;
+        $student->student_name    = $user ? $user->display_name : 'Student';
+        $student->year_group      = get_user_meta($student_id, 'year_group', true);
+        $student->school          = get_user_meta($student_id, 'school', true);
+        $student->avatar_url      = get_avatar_url($student_id, ['size' => 80]);
+        $student->is_primary_contact = false;
+
         ob_start();
         ?>
         <div class="mfsd-pp mfsd-pp--student">
@@ -185,40 +194,7 @@ class MFSD_Parent_Portal_Renderer {
                 <h1 class="mfsd-pp__title">My Progress</h1>
                 <p class="mfsd-pp__subtitle">Your High Performance Pathway journey</p>
             </div>
-
-            <!-- Personal header -->
-            <div class="mfsd-pp__student-header mfsd-pp__student-header--self">
-                <div class="mfsd-pp__student-avatar">
-                    <img src="<?php echo esc_url($avatar); ?>" alt="">
-                </div>
-                <div class="mfsd-pp__student-info">
-                    <h2 class="mfsd-pp__student-name">
-                        Hi, <?php echo esc_html($name); ?>! 👋
-                    </h2>
-                    <div class="mfsd-pp__student-meta">
-                        <?php
-                        $year   = get_user_meta($student_id, 'year_group', true);
-                        $school = get_user_meta($student_id, 'school', true);
-                        ?>
-                        <?php if ($year): ?>
-                            <span class="mfsd-pp__meta-item">📚 Year <?php echo esc_html($year); ?></span>
-                        <?php endif; ?>
-                        <?php if ($school): ?>
-                            <span class="mfsd-pp__meta-item">🏫 <?php echo esc_html($school); ?></span>
-                        <?php endif; ?>
-                    </div>
-                </div>
-                <div class="mfsd-pp__student-overall">
-                    <?php echo $this->render_overall_progress($progress); ?>
-                </div>
-            </div>
-
-            <!-- Week sections (identical structure to parent view) -->
-            <div class="mfsd-pp__weeks">
-                <?php foreach ($progress as $week_num => $week_progress): ?>
-                    <?php $this->render_week_section($week_num, $week_progress); ?>
-                <?php endforeach; ?>
-            </div>
+            <?php $this->render_student_section($student); ?>
         </div>
         <?php
         return ob_get_clean();
