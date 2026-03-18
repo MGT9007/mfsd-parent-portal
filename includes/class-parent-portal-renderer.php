@@ -128,13 +128,13 @@ class MFSD_Parent_Portal_Renderer {
                 </h3>
 
                 <div class="mfsd-pp__course-progress">
-                    <div class="mfsd-pp__course-progress-bar">
-                        <div class="mfsd-pp__course-progress-fill"
-                             style="width:<?php echo $pct; ?>%"></div>
+                    <div class="mfsd-pp__course-progress-row">
+                        <div class="mfsd-pp__course-progress-bar">
+                            <div class="mfsd-pp__course-progress-fill"
+                                 style="width:<?php echo $pct; ?>%"></div>
+                        </div>
+                        <span class="mfsd-pp__course-progress-pct"><?php echo $pct; ?>% complete</span>
                     </div>
-                    <span class="mfsd-pp__course-progress-pct">
-                        <?php echo $pct; ?>% complete
-                    </span>
                 </div>
 
                 <?php if ($pct === 0): ?>
