@@ -198,11 +198,11 @@ class MFSD_Parent_Portal_Renderer {
     // SHARED: student section (used by parent view)
     // =========================================================================
     private function render_student_section($student) {
-        $progress = $this->data->get_student_progress($student->student_user_id);
+        $progress       = $this->data->get_student_progress($student->student_user_id);
+        $course_percent = $this->data->get_course_percent($student->student_user_id);
         ?>
         <div class="mfsd-pp__student" data-student-id="<?php echo esc_attr($student->student_user_id); ?>">
 
-            <!-- Student header: inline styles defeat theme overrides -->
             <div class="mfsd-pp__student-header" style="display:flex!important;align-items:center!important;gap:20px!important;background:linear-gradient(135deg,#4F46E5 0%,#6366F1 100%)!important;padding:24px!important;border-radius:12px!important;color:#fff!important;box-shadow:0 10px 15px -3px rgba(0,0,0,.1)!important;margin-bottom:24px!important;flex-wrap:wrap!important;">
                 <div style="flex-shrink:0!important;">
                     <img src="<?php echo esc_url($student->avatar_url); ?>" alt=""
@@ -225,7 +225,7 @@ class MFSD_Parent_Portal_Renderer {
                     </div>
                 </div>
                 <div style="flex-shrink:0!important;text-align:center!important;">
-                    <?php echo $this->render_overall_progress($progress); ?>
+                    <?php echo $this->render_overall_progress($course_percent); ?>
                 </div>
             </div>
 
@@ -260,6 +260,7 @@ class MFSD_Parent_Portal_Renderer {
             }
         }
         $percentage = $total > 0 ? round(($completed / $total) * 100) : 0;
+    private function render_overall_progress($percentage) {
         ob_start();
         ?>
         <div style="display:flex!important;flex-direction:column!important;align-items:center!important;gap:8px!important;">
@@ -276,9 +277,7 @@ class MFSD_Parent_Portal_Renderer {
                     <?php echo $percentage; ?>%
                 </span>
             </div>
-            <span style="font-size:12px!important;color:rgba(255,255,255,.9)!important;">
-                <?php echo $completed; ?>/<?php echo $total; ?> Complete
-            </span>
+            <span style="font-size:12px!important;color:rgba(255,255,255,.9)!important;">Course Progress</span>
         </div>
         <?php
         return ob_get_clean();
@@ -292,6 +291,16 @@ class MFSD_Parent_Portal_Renderer {
         $week_name          = $week_names[$week_num] ?? "Week {$week_num}";
         $is_all_coming_soon = $this->is_week_coming_soon($week_progress);
         $expanded           = $week_num === 1;
+
+        // Calculate week-level stats
+        $w_completed = $w_total = 0;
+        foreach ($week_progress as $activity) {
+            if (!in_array($activity['status'], ['coming_soon', 'not_available', 'locked'])) {
+                $w_total++;
+                if ($activity['status'] === 'completed') $w_completed++;
+            }
+        }
+        $w_pct = $w_total > 0 ? round(($w_completed / $w_total) * 100) : 0;
         ?>
         <div class="mfsd-pp__week" data-week="<?php echo $week_num; ?>"
              style="background:#fff!important;border-radius:12px!important;box-shadow:0 1px 3px rgba(0,0,0,.1)!important;overflow:hidden!important;border:1px solid #E5E7EB!important;<?php echo $is_all_coming_soon ? 'opacity:.7!important;' : ''; ?>">
@@ -302,8 +311,13 @@ class MFSD_Parent_Portal_Renderer {
                     <span><?php echo $this->get_week_icon($week_progress); ?></span>
                     <?php echo esc_html($week_name); ?>
                 </h3>
-                <div style="flex-shrink:0!important;font-size:14px!important;color:#6B7280!important;">
-                    <?php echo $this->get_week_summary($week_progress); ?>
+                <div style="flex-shrink:0!important;text-align:right!important;">
+                    <?php if ($w_total > 0): ?>
+                        <div style="font-size:13px!important;font-weight:600!important;color:#4F46E5!important;"><?php echo $w_pct; ?>% complete</div>
+                        <div style="font-size:12px!important;color:#6B7280!important;margin-top:2px!important;"><?php echo $w_completed; ?> of <?php echo $w_total; ?> activities</div>
+                    <?php else: ?>
+                        <span style="font-size:13px!important;color:#9CA3AF!important;font-style:italic!important;">Coming Soon</span>
+                    <?php endif; ?>
                 </div>
                 <span class="mfsd-pp__week-toggle" style="flex-shrink:0!important;width:24px!important;height:24px!important;color:#9CA3AF!important;transition:transform .2s!important;">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">

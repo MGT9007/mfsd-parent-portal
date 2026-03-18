@@ -22,27 +22,32 @@ class MFSD_Parent_Portal_Data {
                 'name'        => 'Word Association',
                 'icon'        => '💭',
                 'description' => 'Exploring thought patterns and associations',
+                'url'         => 'https://mfsd.me/my-future-self-foundation-course/week-1/word-association/',
             ],
             'junk_jobs' => [
                 'name'        => 'Junk Jobs',
                 'icon'        => '🗑️',
                 'description' => 'Identifying careers to avoid',
+                'url'         => 'https://mfsd.me/my-future-self-foundation-course/week-1/junk-jobs/',
             ],
             'personality_test_mbti' => [
                 'name'        => 'Personality Test (MBTI)',
                 'icon'        => '🧠',
                 'description' => 'Myers-Briggs personality assessment',
-                'task_slug'   => 'personality_test', // slug used in task_progress table
+                'task_slug'   => 'personality_test',
+                'url'         => 'https://mfsd.me/my-future-self-foundation-course/week-1/week-1-personality-test/',
             ],
             'weekly_rag' => [
                 'name'        => 'Weekly Check-in',
                 'icon'        => '🚦',
                 'description' => 'Red/Amber/Green weekly reflection',
+                'url'         => 'https://mfsd.me/my-future-self-foundation-course/week-1/week-1-rag/',
             ],
             'super_strengths' => [
                 'name'        => 'Super Strengths',
                 'icon'        => '💪',
                 'description' => 'Discovering personal strengths',
+                'url'         => 'https://mfsd.me/my-future-self-foundation-course/week-1/super-strengths/',
             ],
         ],
         2 => [
@@ -66,6 +71,41 @@ class MFSD_Parent_Portal_Data {
     public function __construct() {
         global $wpdb;
         $this->wpdb = $wpdb;
+    }
+
+    // ── Course-level % (all weeks, from task management tables) ──────────────
+    // This matches the landing page calculation exactly.
+    public function get_course_percent($student_id) {
+        $order_table    = $this->wpdb->prefix . 'mfsd_task_order';
+        $progress_table = $this->wpdb->prefix . 'mfsd_task_progress';
+
+        if ($this->wpdb->get_var("SHOW TABLES LIKE '{$order_table}'") !== $order_table) {
+            return 0;
+        }
+
+        // Get the course this student is enrolled on
+        $enrol_table = $this->wpdb->prefix . 'mfsd_enrolments';
+        $course_id   = (int) $this->wpdb->get_var($this->wpdb->prepare(
+            "SELECT course_id FROM {$enrol_table} WHERE student_id = %d LIMIT 1",
+            $student_id
+        ));
+
+        if (!$course_id) return 0;
+
+        $total = (int) $this->wpdb->get_var($this->wpdb->prepare(
+            "SELECT COUNT(*) FROM {$order_table} WHERE course_id = %d AND active = 1",
+            $course_id
+        ));
+
+        if (!$total) return 0;
+
+        $completed = (int) $this->wpdb->get_var($this->wpdb->prepare(
+            "SELECT COUNT(*) FROM {$progress_table}
+             WHERE student_id = %d AND course_id = %d AND status = 'completed'",
+            $student_id, $course_id
+        ));
+
+        return round(($completed / $total) * 100);
     }
 
     // ── Courses ───────────────────────────────────────────────────────────────
@@ -102,21 +142,19 @@ class MFSD_Parent_Portal_Data {
         ));
 
         foreach ($courses as &$course) {
-            $course_id = (int) $course->id;
+            // Use the same plugin-table data source as the detail page
+            // so landing page % always matches the detail page %
+            $progress = $this->get_student_progress($student_id);
 
-            // Count total active tasks on this course
-            $total = (int) $this->wpdb->get_var($this->wpdb->prepare(
-                "SELECT COUNT(*) FROM {$order_table}
-                 WHERE course_id = %d AND active = 1",
-                $course_id
-            ));
-
-            // Count completed tasks for this student on this course
-            $completed = (int) $this->wpdb->get_var($this->wpdb->prepare(
-                "SELECT COUNT(*) FROM {$progress_table}
-                 WHERE student_id = %d AND course_id = %d AND status = 'completed'",
-                $student_id, $course_id
-            ));
+            $total = $completed = 0;
+            foreach ($progress as $week_progress) {
+                foreach ($week_progress as $activity) {
+                    if (!in_array($activity['status'], ['coming_soon', 'not_available', 'locked'])) {
+                        $total++;
+                        if ($activity['status'] === 'completed') $completed++;
+                    }
+                }
+            }
 
             $course->total_tasks      = $total;
             $course->completed_tasks  = $completed;
