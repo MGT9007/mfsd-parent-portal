@@ -207,29 +207,35 @@ class MFSD_Parent_Portal_Renderer {
         $progress = $this->data->get_student_progress($student->student_user_id);
         ?>
         <div class="mfsd-pp__student" data-student-id="<?php echo esc_attr($student->student_user_id); ?>">
-            <div class="mfsd-pp__student-header">
-                <div class="mfsd-pp__student-avatar">
-                    <img src="<?php echo esc_url($student->avatar_url); ?>" alt="">
+
+            <!-- Student header: inline styles defeat theme overrides -->
+            <div class="mfsd-pp__student-header" style="display:flex!important;align-items:center!important;gap:20px!important;background:linear-gradient(135deg,#4F46E5 0%,#6366F1 100%)!important;padding:24px!important;border-radius:12px!important;color:#fff!important;box-shadow:0 10px 15px -3px rgba(0,0,0,.1)!important;margin-bottom:24px!important;flex-wrap:wrap!important;">
+                <div style="flex-shrink:0!important;">
+                    <img src="<?php echo esc_url($student->avatar_url); ?>" alt=""
+                         style="width:80px!important;height:80px!important;border-radius:50%!important;border:3px solid rgba(255,255,255,.3)!important;object-fit:cover!important;display:block!important;">
                 </div>
-                <div class="mfsd-pp__student-info">
-                    <h2 class="mfsd-pp__student-name"><?php echo esc_html($student->student_name); ?></h2>
-                    <div class="mfsd-pp__student-meta">
+                <div style="flex:1!important;min-width:0!important;">
+                    <h2 style="font-size:24px!important;font-weight:700!important;margin:0 0 8px 0!important;color:#fff!important;">
+                        <?php echo esc_html($student->student_name); ?>
+                    </h2>
+                    <div style="display:flex!important;flex-wrap:wrap!important;gap:12px!important;">
                         <?php if (!empty($student->year_group)): ?>
-                            <span class="mfsd-pp__meta-item">📚 Year <?php echo esc_html($student->year_group); ?></span>
+                            <span style="font-size:14px!important;color:rgba(255,255,255,.9)!important;">📚 Year <?php echo esc_html($student->year_group); ?></span>
                         <?php endif; ?>
                         <?php if (!empty($student->school)): ?>
-                            <span class="mfsd-pp__meta-item">🏫 <?php echo esc_html($student->school); ?></span>
+                            <span style="font-size:14px!important;color:rgba(255,255,255,.9)!important;">🏫 <?php echo esc_html($student->school); ?></span>
                         <?php endif; ?>
                         <?php if ($student->is_primary_contact): ?>
-                            <span class="mfsd-pp__meta-item mfsd-pp__meta-item--primary">⭐ Primary Contact</span>
+                            <span style="background:rgba(255,255,255,.2)!important;padding:4px 10px!important;border-radius:20px!important;font-size:14px!important;color:#fff!important;">⭐ Primary Contact</span>
                         <?php endif; ?>
                     </div>
                 </div>
-                <div class="mfsd-pp__student-overall">
+                <div style="flex-shrink:0!important;text-align:center!important;">
                     <?php echo $this->render_overall_progress($progress); ?>
                 </div>
             </div>
-            <div class="mfsd-pp__weeks">
+
+            <div class="mfsd-pp__weeks" style="display:flex!important;flex-direction:column!important;gap:16px!important;">
                 <?php foreach ($progress as $week_num => $week_progress): ?>
                     <?php $this->render_week_section($week_num, $week_progress); ?>
                 <?php endforeach; ?>
@@ -262,19 +268,23 @@ class MFSD_Parent_Portal_Renderer {
         $percentage = $total > 0 ? round(($completed / $total) * 100) : 0;
         ob_start();
         ?>
-        <div class="mfsd-pp__overall-progress">
-            <div class="mfsd-pp__progress-ring">
+        <div style="display:flex!important;flex-direction:column!important;align-items:center!important;gap:8px!important;">
+            <div style="width:80px!important;height:80px!important;position:relative!important;flex-shrink:0!important;">
                 <svg viewBox="0 0 36 36" width="80" height="80"
-                     style="width:80px;height:80px;display:block;overflow:visible;">
-                    <path class="mfsd-pp__progress-bg" fill="none"
+                     style="width:80px!important;height:80px!important;display:block!important;transform:rotate(-90deg)!important;">
+                    <path fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="3"
                         d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
-                    <path class="mfsd-pp__progress-fill" fill="none"
+                    <path fill="none" stroke="white" stroke-width="3" stroke-linecap="round"
                         stroke-dasharray="<?php echo $percentage; ?>, 100"
                         d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
                 </svg>
-                <span class="mfsd-pp__progress-text"><?php echo $percentage; ?>%</span>
+                <span style="position:absolute!important;top:50%!important;left:50%!important;transform:translate(-50%,-50%)!important;font-size:18px!important;font-weight:700!important;color:#fff!important;">
+                    <?php echo $percentage; ?>%
+                </span>
             </div>
-            <span class="mfsd-pp__progress-label"><?php echo $completed; ?>/<?php echo $total; ?> Complete</span>
+            <span style="font-size:12px!important;color:rgba(255,255,255,.9)!important;">
+                <?php echo $completed; ?>/<?php echo $total; ?> Complete
+            </span>
         </div>
         <?php
         return ob_get_clean();
@@ -284,29 +294,34 @@ class MFSD_Parent_Portal_Renderer {
     // WEEK SECTION
     // =========================================================================
     private function render_week_section($week_num, $week_progress) {
-        $week_names        = [1 => 'Week 1: Foundation', 2 => 'Week 2: Exploration', 3 => 'Week 3: Discovery'];
-        $week_name         = $week_names[$week_num] ?? "Week {$week_num}";
+        $week_names         = [1 => 'Week 1: Foundation', 2 => 'Week 2: Exploration', 3 => 'Week 3: Discovery'];
+        $week_name          = $week_names[$week_num] ?? "Week {$week_num}";
         $is_all_coming_soon = $this->is_week_coming_soon($week_progress);
+        $expanded           = $week_num === 1;
         ?>
-        <div class="mfsd-pp__week <?php echo $is_all_coming_soon ? 'mfsd-pp__week--coming-soon' : ''; ?>"
-             data-week="<?php echo $week_num; ?>">
-            <button class="mfsd-pp__week-header"
-                    aria-expanded="<?php echo $week_num === 1 ? 'true' : 'false'; ?>">
-                <h3 class="mfsd-pp__week-title">
-                    <span class="mfsd-pp__week-icon"><?php echo $this->get_week_icon($week_progress); ?></span>
+        <div class="mfsd-pp__week" data-week="<?php echo $week_num; ?>"
+             style="background:#fff!important;border-radius:12px!important;box-shadow:0 1px 3px rgba(0,0,0,.1)!important;overflow:hidden!important;border:1px solid #E5E7EB!important;<?php echo $is_all_coming_soon ? 'opacity:.7!important;' : ''; ?>">
+
+            <button class="mfsd-pp__week-header" aria-expanded="<?php echo $expanded ? 'true' : 'false'; ?>"
+                    style="display:flex!important;align-items:center!important;width:100%!important;padding:16px 20px!important;background:#F9FAFB!important;border:none!important;cursor:pointer!important;text-align:left!important;gap:12px!important;">
+                <h3 style="display:flex!important;align-items:center!important;gap:10px!important;margin:0!important;font-size:18px!important;font-weight:600!important;color:#1F2937!important;flex:1!important;">
+                    <span><?php echo $this->get_week_icon($week_progress); ?></span>
                     <?php echo esc_html($week_name); ?>
                 </h3>
-                <div class="mfsd-pp__week-summary">
+                <div style="flex-shrink:0!important;font-size:14px!important;color:#6B7280!important;">
                     <?php echo $this->get_week_summary($week_progress); ?>
                 </div>
-                <span class="mfsd-pp__week-toggle">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <span class="mfsd-pp__week-toggle" style="flex-shrink:0!important;width:24px!important;height:24px!important;color:#9CA3AF!important;transition:transform .2s!important;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
                         <polyline points="6 9 12 15 18 9"></polyline>
                     </svg>
                 </span>
             </button>
-            <div class="mfsd-pp__week-content" <?php echo $week_num !== 1 ? 'hidden' : ''; ?>>
-                <div class="mfsd-pp__activities">
+
+            <div class="mfsd-pp__week-content" <?php echo !$expanded ? 'hidden' : ''; ?>
+                 style="padding:20px!important;border-top:1px solid #E5E7EB!important;">
+                <div class="mfsd-pp__activities"
+                     style="display:grid!important;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))!important;gap:16px!important;">
                     <?php foreach ($week_progress as $activity_key => $activity): ?>
                         <?php $this->render_activity_card($activity_key, $activity); ?>
                     <?php endforeach; ?>
@@ -357,60 +372,58 @@ class MFSD_Parent_Portal_Renderer {
     private function render_activity_card($activity_key, $activity) {
         $status = $activity['status'];
         $info   = $activity['info'] ?? [];
+        $s      = $this->viewer_role === 'student';
 
-        // Copy varies by viewer role
-        $s = $this->viewer_role === 'student';
+        $border_colors = [
+            'completed'   => '#10B981',
+            'in_progress' => '#F59E0B',
+            'coming_soon' => '#E5E7EB',
+            'locked'      => '#E5E7EB',
+            'not_started' => '#E5E7EB',
+        ];
+        $border = $border_colors[$status] ?? '#E5E7EB';
         ?>
-        <div class="mfsd-pp__activity mfsd-pp__activity--<?php echo esc_attr($status); ?>"
-             data-activity="<?php echo esc_attr($activity_key); ?>">
+        <div class="mfsd-pp__activity" data-activity="<?php echo esc_attr($activity_key); ?>"
+             style="background:#fff!important;border-radius:8px!important;border:1px solid <?php echo $border; ?>!important;overflow:hidden!important;<?php echo in_array($status,['coming_soon','locked']) ? 'opacity:.6!important;' : ''; ?>">
 
-            <div class="mfsd-pp__activity-header">
-                <span class="mfsd-pp__activity-icon"><?php echo $info['icon'] ?? '📝'; ?></span>
-                <div class="mfsd-pp__activity-title-wrap">
-                    <h4 class="mfsd-pp__activity-title"><?php echo esc_html($info['name'] ?? $activity_key); ?></h4>
-                    <p class="mfsd-pp__activity-desc"><?php echo esc_html($info['description'] ?? ''); ?></p>
+            <div style="display:flex!important;align-items:flex-start!important;gap:12px!important;padding:16px!important;background:#F9FAFB!important;border-bottom:1px solid #F3F4F6!important;">
+                <span style="font-size:28px!important;line-height:1!important;flex-shrink:0!important;"><?php echo $info['icon'] ?? '📝'; ?></span>
+                <div style="flex:1!important;min-width:0!important;">
+                    <h4 style="font-size:16px!important;font-weight:600!important;margin:0 0 4px 0!important;color:#1F2937!important;">
+                        <?php echo esc_html($info['name'] ?? $activity_key); ?>
+                    </h4>
+                    <p style="font-size:13px!important;color:#6B7280!important;margin:0!important;">
+                        <?php echo esc_html($info['description'] ?? ''); ?>
+                    </p>
                 </div>
                 <?php echo $this->render_status_badge($status); ?>
             </div>
 
-            <?php if ($status === 'locked'): ?>
-                <div class="mfsd-pp__activity-body mfsd-pp__activity-body--locked">
-                    <p class="mfsd-pp__not-started-text">
-                        <?php echo $s
-                            ? '🔒 Complete the previous activity to unlock this one.'
-                            : '🔒 This activity will unlock once your child completes the previous one.'; ?>
+            <div style="padding:16px!important;">
+                <?php if ($status === 'locked'): ?>
+                    <p style="color:#6B7280!important;margin:0!important;font-size:14px!important;">
+                        <?php echo $s ? '🔒 Complete the previous activity to unlock this one.' : '🔒 Unlocks after the previous activity is completed.'; ?>
                     </p>
-                </div>
-
-            <?php elseif ($status === 'coming_soon'): ?>
-                <div class="mfsd-pp__activity-body mfsd-pp__activity-body--coming">
-                    <p><?php echo $s ? 'This activity is coming soon.' : 'This activity will be available soon.'; ?></p>
-                </div>
-
-            <?php elseif ($status === 'not_started'): ?>
-                <div class="mfsd-pp__activity-body">
-                    <p class="mfsd-pp__not-started-text">
-                        <?php echo $s
-                            ? "You haven't started this activity yet."
-                            : "Your child hasn't started this activity yet."; ?>
+                <?php elseif ($status === 'coming_soon'): ?>
+                    <p style="color:#9CA3AF!important;font-style:italic!important;margin:0!important;">
+                        <?php echo $s ? 'This activity is coming soon.' : 'This activity will be available soon.'; ?>
                     </p>
-                </div>
-
-            <?php elseif ($status === 'in_progress'): ?>
-                <div class="mfsd-pp__activity-body">
+                <?php elseif ($status === 'not_started'): ?>
+                    <p style="color:#6B7280!important;margin:0!important;font-size:14px!important;">
+                        <?php echo $s ? "You haven't started this activity yet." : "Your child hasn't started this activity yet."; ?>
+                    </p>
+                <?php elseif ($status === 'in_progress'): ?>
                     <?php echo $this->render_progress_bar($activity); ?>
-                    <p class="mfsd-pp__progress-note"><?php echo esc_html($activity['progress_text'] ?? ''); ?></p>
+                    <p style="font-size:13px!important;color:#6B7280!important;margin:4px 0 0 0!important;">
+                        <?php echo esc_html($activity['progress_text'] ?? ''); ?>
+                    </p>
                     <?php if ($activity_key === 'super_strengths' && !empty($activity['all_players'])): ?>
                         <?php $this->render_ss_player_status($activity['all_players']); ?>
                     <?php endif; ?>
-                </div>
-
-            <?php elseif ($status === 'completed'): ?>
-                <div class="mfsd-pp__activity-body">
+                <?php elseif ($status === 'completed'): ?>
                     <?php echo $this->render_activity_results($activity_key, $activity); ?>
-                </div>
-
-            <?php endif; ?>
+                <?php endif; ?>
+            </div>
         </div>
         <?php
     }
