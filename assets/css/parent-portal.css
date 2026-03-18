@@ -174,3 +174,67 @@
         grid-template-columns: 1fr;
     }
 }
+
+/* ========================================
+   Theme conflict overrides
+   Defensive !important rules to prevent
+   the active theme from breaking layout.
+   ======================================== */
+
+/* Student header gradient card */
+.mfsd-pp__student-header {
+    display: flex !important;
+    color: white !important;
+}
+.mfsd-pp__student-name {
+    color: white !important;
+}
+.mfsd-pp .mfsd-pp__student-meta,
+.mfsd-pp .mfsd-pp__meta-item {
+    color: rgba(255,255,255,0.9) !important;
+}
+
+/* Avatar — prevent theme height:auto stretching */
+.mfsd-pp__student-avatar img {
+    width: 80px !important;
+    height: 80px !important;
+    max-width: 80px !important;
+    max-height: 80px !important;
+}
+
+/* SVG progress ring — prevent theme expanding it */
+.mfsd-pp__progress-ring {
+    width: 80px !important;
+    height: 80px !important;
+    max-width: 80px !important;
+    flex-shrink: 0 !important;
+}
+.mfsd-pp__progress-ring svg {
+    width: 80px !important;
+    height: 80px !important;
+    max-width: 80px !important;
+    display: block !important;
+}
+
+/* Activity cards — prevent theme collapsing flex layout */
+.mfsd-pp__activity-header {
+    display: flex !important;
+}
+.mfsd-pp__activities {
+    display: grid !important;
+}
+
+/* Week header */
+.mfsd-pp__week-header {
+    display: flex !important;
+}
+
+/* Prevent theme typography overriding card headings */
+.mfsd-pp__activity-title {
+    color: var(--pp-gray-800) !important;
+    font-size: 16px !important;
+    margin: 0 0 4px 0 !important;
+}
+.mfsd-pp__week-title {
+    color: var(--pp-gray-800) !important;
+}
