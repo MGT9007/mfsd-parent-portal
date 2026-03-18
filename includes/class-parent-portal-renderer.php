@@ -272,10 +272,10 @@ class MFSD_Parent_Portal_Renderer {
 
         $w_completed = $w_total = 0;
         foreach ($week_progress as $activity) {
-            if (!in_array($activity['status'], ['coming_soon', 'not_available', 'locked'])) {
-                $w_total++;
-                if ($activity['status'] === 'completed') $w_completed++;
-            }
+            // Exclude only truly unavailable/placeholder activities from the count
+            if (in_array($activity['status'], ['coming_soon', 'not_available'])) continue;
+            $w_total++;
+            if ($activity['status'] === 'completed') $w_completed++;
         }
         $w_pct = $w_total > 0 ? round(($w_completed / $w_total) * 100) : 0;
         ?>
@@ -329,10 +329,9 @@ class MFSD_Parent_Portal_Renderer {
     private function get_week_icon($week_progress) {
         $completed = $total = 0;
         foreach ($week_progress as $a) {
-            if (!in_array($a['status'], ['coming_soon', 'not_available', 'locked'])) {
-                $total++;
-                if ($a['status'] === 'completed') $completed++;
-            }
+            if (in_array($a['status'], ['coming_soon', 'not_available'])) continue;
+            $total++;
+            if ($a['status'] === 'completed') $completed++;
         }
         if ($total === 0)          return '🔒';
         if ($completed === $total) return '✅';
