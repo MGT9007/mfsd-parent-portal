@@ -492,173 +492,63 @@ class MFSD_Parent_Portal_Renderer {
         return ob_get_clean();
     }
 
-    // =========================================================================
-    // WORD ASSOCIATION — count only, no AI summary (link goes to task page)
-    // =========================================================================
     private function render_word_association_results($activity) {
         $responses = $activity['responses'] ?? [];
         $s         = $this->viewer_role === 'student';
         ?>
-        <div class="mfsd-pp__results">
-            <p class="mfsd-pp__results-summary" style="margin:0!important;font-size:14px!important;color:#374151!important;">
-                <strong><?php echo count($responses); ?></strong>
-                <?php echo $s ? ' words you\'ve completed' : ' words completed'; ?>
-            </p>
-        </div>
+        <p style="margin:0!important;font-size:14px!important;color:#374151!important;">
+            <strong><?php echo count($responses); ?></strong><?php echo $s ? ' words you\'ve completed' : ' words completed'; ?>
+        </p>
         <?php
     }
 
-    // =========================================================================
-    // JUNK JOBS
-    // =========================================================================
     private function render_junk_jobs_results($activity) {
-        $jobs    = $activity['jobs']    ?? [];
-        $reasons = $activity['reasons'] ?? [];
-        $s       = $this->viewer_role === 'student';
+        $jobs = $activity['jobs'] ?? [];
+        $s    = $this->viewer_role === 'student';
         ?>
-        <div class="mfsd-pp__results mfsd-pp__results--junk-jobs">
-            <?php if (!empty($activity['mbti_type'])): ?>
-                <p class="mfsd-pp__results-context">
-                    Analysis based on <strong><?php echo esc_html($activity['mbti_type']); ?></strong> personality type
-                </p>
-            <?php endif; ?>
-            <?php if (!empty($activity['analysis'])): ?>
-                <div class="mfsd-pp__ai-summary">
-                    <h5 class="mfsd-pp__ai-summary-title">
-                        <span class="mfsd-pp__ai-icon">🤖</span> Career Insights
-                    </h5>
-                    <div class="mfsd-pp__ai-summary-content">
-                        <?php echo wp_kses_post($activity['analysis']); ?>
-                    </div>
-                </div>
-            <?php endif; ?>
-            <?php if (!empty($jobs)): ?>
-                <details class="mfsd-pp__details">
-                    <summary><?php echo $s ? 'View your selected jobs &amp; reasons' : 'View selected jobs &amp; reasons'; ?></summary>
-                    <div class="mfsd-pp__jobs-list">
-                        <?php foreach ($jobs as $job): ?>
-                            <div class="mfsd-pp__job-item">
-                                <span class="mfsd-pp__job-name">🗑️ <?php echo esc_html($job); ?></span>
-                                <?php if (!empty($reasons[$job])): ?>
-                                    <span class="mfsd-pp__job-reason"><?php echo esc_html($reasons[$job]); ?></span>
-                                <?php endif; ?>
-                            </div>
-                        <?php endforeach; ?>
-                    </div>
-                </details>
-            <?php endif; ?>
-        </div>
+        <p style="margin:0!important;font-size:14px!important;color:#374151!important;">
+            <strong><?php echo count($jobs); ?></strong><?php echo $s ? ' jobs you\'ve identified' : ' jobs identified'; ?>
+        </p>
         <?php
     }
 
-    // =========================================================================
-    // PERSONALITY TEST
-    // =========================================================================
     private function render_personality_results($activity) {
         ?>
-        <div class="mfsd-pp__results mfsd-pp__results--personality">
-            <div class="mfsd-pp__personality-type">
-                <span class="mfsd-pp__mbti-badge"><?php echo esc_html($activity['mbti_type'] ?? 'N/A'); ?></span>
+        <p style="margin:0!important;font-size:14px!important;color:#374151!important;">
+            <?php if (!empty($activity['mbti_type'])): ?>
+                MBTI type: <strong><?php echo esc_html($activity['mbti_type']); ?></strong>
                 <?php if (!empty($activity['disc_primary'])): ?>
-                    <span class="mfsd-pp__disc-badge">DISC: <?php echo esc_html($activity['disc_primary']); ?></span>
+                    &nbsp;·&nbsp; DISC: <strong><?php echo esc_html($activity['disc_primary']); ?></strong>
                 <?php endif; ?>
-            </div>
-            <?php if (!empty($activity['disc_scores'])): ?>
-                <div class="mfsd-pp__disc-scores">
-                    <?php foreach ($activity['disc_scores'] as $letter => $score): ?>
-                        <?php if ($score !== null): ?>
-                            <div class="mfsd-pp__disc-score">
-                                <span class="mfsd-pp__disc-letter"><?php echo $letter; ?></span>
-                                <div class="mfsd-pp__disc-bar">
-                                    <div class="mfsd-pp__disc-bar-fill mfsd-pp__disc-bar-fill--<?php echo strtolower($letter); ?>"
-                                         style="width: <?php echo intval($score); ?>%"></div>
-                                </div>
-                                <span class="mfsd-pp__disc-value"><?php echo intval($score); ?>%</span>
-                            </div>
-                        <?php endif; ?>
-                    <?php endforeach; ?>
-                </div>
+            <?php else: ?>
+                Personality assessment complete
             <?php endif; ?>
-            <?php if (!empty($activity['ai_summary'])): ?>
-                <div class="mfsd-pp__ai-summary">
-                    <h5 class="mfsd-pp__ai-summary-title">
-                        <span class="mfsd-pp__ai-icon">🎯</span> Steve Says
-                    </h5>
-                    <div class="mfsd-pp__ai-summary-content">
-                        <?php echo wp_kses_post($activity['ai_summary']); ?>
-                    </div>
-                </div>
-            <?php endif; ?>
-        </div>
+        </p>
         <?php
     }
 
-    // =========================================================================
-    // WEEKLY RAG
-    // =========================================================================
     private function render_rag_results($activity) {
         $breakdown = $activity['breakdown'] ?? [];
-        $total     = array_sum($breakdown);
         ?>
-        <div class="mfsd-pp__results mfsd-pp__results--rag">
-            <div class="mfsd-pp__rag-overview">
-                <div class="mfsd-pp__rag-score">
-                    <span class="mfsd-pp__rag-score-value"><?php echo intval($activity['total_score'] ?? 0); ?></span>
-                    <span class="mfsd-pp__rag-score-label">Total Score</span>
-                </div>
-                <?php if ($total > 0): ?>
-                    <div class="mfsd-pp__rag-breakdown">
-                        <?php if (($breakdown['G'] ?? 0) > 0): ?>
-                            <span class="mfsd-pp__rag-item mfsd-pp__rag-item--green">🟢 <?php echo $breakdown['G']; ?> Green</span>
-                        <?php endif; ?>
-                        <?php if (($breakdown['A'] ?? 0) > 0): ?>
-                            <span class="mfsd-pp__rag-item mfsd-pp__rag-item--amber">🟡 <?php echo $breakdown['A']; ?> Amber</span>
-                        <?php endif; ?>
-                        <?php if (($breakdown['R'] ?? 0) > 0): ?>
-                            <span class="mfsd-pp__rag-item mfsd-pp__rag-item--red">🔴 <?php echo $breakdown['R']; ?> Red</span>
-                        <?php endif; ?>
-                    </div>
-                <?php endif; ?>
-            </div>
-        </div>
+        <p style="margin:0!important;font-size:14px!important;color:#374151!important;">
+            Score: <strong><?php echo intval($activity['total_score'] ?? 0); ?></strong>
+            <?php if (!empty($breakdown)): ?>
+                &nbsp;·&nbsp;
+                <?php if (($breakdown['G'] ?? 0) > 0): ?><?php echo $breakdown['G']; ?>🟢 <?php endif; ?>
+                <?php if (($breakdown['A'] ?? 0) > 0): ?><?php echo $breakdown['A']; ?>🟡 <?php endif; ?>
+                <?php if (($breakdown['R'] ?? 0) > 0): ?><?php echo $breakdown['R']; ?>🔴<?php endif; ?>
+            <?php endif; ?>
+        </p>
         <?php
     }
 
-    // =========================================================================
-    // SUPER STRENGTHS
-    // =========================================================================
     private function render_super_strengths_results($activity) {
         $received = $activity['received_cards'] ?? [];
         $s        = $this->viewer_role === 'student';
         ?>
-        <div class="mfsd-pp__results mfsd-pp__results--super-strengths">
-            <?php if (!empty($activity['ai_summary'])): ?>
-                <div class="mfsd-pp__ai-summary">
-                    <h5 class="mfsd-pp__ai-summary-title">
-                        <span class="mfsd-pp__ai-icon">💬</span> Steve Says
-                    </h5>
-                    <div class="mfsd-pp__ai-summary-content">
-                        <?php echo wp_kses_post(nl2br(esc_html($activity['ai_summary']))); ?>
-                    </div>
-                </div>
-            <?php endif; ?>
-            <?php if (!empty($received)): ?>
-                <details class="mfsd-pp__details">
-                    <summary>
-                        <?php echo $s
-                            ? 'View your ' . count($received) . ' Super Strength cards'
-                            : 'View all ' . count($received) . ' Super Strength cards received'; ?>
-                    </summary>
-                    <div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:10px;">
-                        <?php foreach ($received as $card): ?>
-                            <span style="display:inline-block;background:var(--pp-primary-light);border:1px solid var(--pp-primary);border-radius:20px;padding:5px 13px;font-size:13px;color:var(--pp-gray-700);">
-                                <?php echo esc_html($card['strength_text']); ?>
-                            </span>
-                        <?php endforeach; ?>
-                    </div>
-                </details>
-            <?php endif; ?>
-        </div>
+        <p style="margin:0!important;font-size:14px!important;color:#374151!important;">
+            <strong><?php echo count($received); ?></strong><?php echo $s ? ' strength cards you received' : ' strength cards received'; ?>
+        </p>
         <?php
     }
 
