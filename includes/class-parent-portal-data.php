@@ -8,62 +8,65 @@ if (!defined('ABSPATH')) exit;
 class MFSD_Parent_Portal_Data {
 
     private $wpdb;
+    private $course_id = null; // cached active course ID
 
-    private $activities = [
-        1 => [
-            'word_association' => [
-                'name'        => 'Word Association',
-                'icon'        => '💭',
-                'description' => 'Exploring thought patterns and associations',
-                'url'         => 'https://mfsd.me/my-future-self-foundation-course/week-1/word-association/',
-            ],
-            'junk_jobs' => [
-                'name'        => 'Junk Jobs',
-                'icon'        => '🗑️',
-                'description' => 'Identifying careers to avoid',
-                'url'         => 'https://mfsd.me/my-future-self-foundation-course/week-1/junk-jobs/',
-            ],
-            'personality_test_mbti' => [
-                'name'        => 'Personality Test (MBTI)',
-                'icon'        => '🧠',
-                'description' => 'Myers-Briggs personality assessment',
-                'task_slug'   => 'personality_test',
-                'url'         => 'https://mfsd.me/my-future-self-foundation-course/week-1/week-1-personality-test/',
-            ],
-            'super_strengths' => [
-                'name'        => 'Super Strengths',
-                'icon'        => '💪',
-                'description' => 'Discovering personal strengths',
-                'url'         => 'https://mfsd.me/my-future-self-foundation-course/week-1/super-strengths/',
-            ],
-            'weekly_rag' => [
-                'name'        => 'Weekly Check-in',
-                'icon'        => '🚦',
-                'description' => 'Red/Amber/Green weekly reflection',
-                'url'         => 'https://mfsd.me/my-future-self-foundation-course/week-1/week-1-rag/',
-            ],
+    // Display metadata keyed by exact task_slug from wp_mfsd_task_order.
+    // week/task_no ordering now comes from the DB — only icon/name/url/description live here.
+    private $metadata = [
+        'mfsd_solution_lens' => [
+            'name'        => 'The Solution Lens',
+            'icon'        => '🔍',
+            'description' => 'Gestalt image perception exercise',
+            'url'         => 'https://mfsd.me/my-future-self-foundation-course/week-1/solution-lens/',
         ],
-        2 => [
-            'placeholder' => [
-                'name'        => 'Week 2 Activities',
-                'icon'        => '📚',
-                'description' => 'Coming soon',
-                'coming_soon' => true,
-            ],
+        'word_association' => [
+            'name'        => 'Word Association',
+            'icon'        => '💭',
+            'description' => 'Exploring thought patterns and associations',
+            'url'         => 'https://mfsd.me/my-future-self-foundation-course/week-1/word-association/',
         ],
-        3 => [
-            'placeholder' => [
-                'name'        => 'Week 3 Activities',
-                'icon'        => '📚',
-                'description' => 'Coming soon',
-                'coming_soon' => true,
-            ],
+        'junk_jobs' => [
+            'name'        => 'Junk Jobs',
+            'icon'        => '🗑️',
+            'description' => 'Identifying careers to avoid',
+            'url'         => 'https://mfsd.me/my-future-self-foundation-course/week-2/junk-jobs/',
         ],
+        'personality_test_week_1' => [
+            'name'          => 'Who Am I Part 1',
+            'icon'          => '🧠',
+            'description'   => 'Myers-Briggs personality assessment',
+            'url'           => 'https://mfsd.me/my-future-self-foundation-course/week-1/week-1-personality-test/',
+            'status_method' => 'get_personality_test_mbti_status',
+        ],
+        'super_strengths' => [
+            'name'        => 'Super Strengths',
+            'icon'        => '💪',
+            'description' => 'Discovering personal strengths',
+            'url'         => 'https://mfsd.me/my-future-self-foundation-course/week-1/super-strengths/',
+        ],
+        'rag_week_1' => [
+            'name'          => 'Weekly Check-in',
+            'icon'          => '🚦',
+            'description'   => 'Red/Amber/Green weekly reflection',
+            'url'           => 'https://mfsd.me/my-future-self-foundation-course/week-1/week-1-rag/',
+            'status_method' => 'get_weekly_rag_status',
+        ],
+        // Add new task slugs here as new tasks are built
     ];
 
     public function __construct() {
         global $wpdb;
         $this->wpdb = $wpdb;
+    }
+
+    // ── Internal helpers ──────────────────────────────────────────────────────
+
+    private function get_active_course_id() {
+        if ($this->course_id !== null) return $this->course_id;
+        $this->course_id = (int) $this->wpdb->get_var(
+            "SELECT id FROM {$this->wpdb->prefix}mfsd_courses WHERE active = 1 ORDER BY id ASC LIMIT 1"
+        );
+        return $this->course_id;
     }
 
     // ── Linking table ─────────────────────────────────────────────────────────
@@ -148,34 +151,92 @@ class MFSD_Parent_Portal_Data {
         return $courses;
     }
 
-    // ── Activity definitions ──────────────────────────────────────────────────
+    // ── Activity definitions — live from wp_mfsd_task_order ───────────────────
     public function get_week_activities($week_num) {
-        return $this->activities[$week_num] ?? [];
+        $order_table = $this->wpdb->prefix . 'mfsd_task_order';
+
+        if ($this->wpdb->get_var("SHOW TABLES LIKE '{$order_table}'") !== $order_table) {
+            return [];
+        }
+
+        $course_id = $this->get_active_course_id();
+        if (!$course_id) return [];
+
+        $rows = $this->wpdb->get_results($this->wpdb->prepare(
+            "SELECT task_slug, display_name, task_no
+             FROM {$order_table}
+             WHERE course_id = %d AND week = %d AND active = 1
+             ORDER BY sequence_order ASC",
+            $course_id,
+            $week_num
+        ));
+
+        $activities = [];
+        foreach ($rows as $row) {
+            $slug = $row->task_slug;
+            $activities[$slug] = $this->metadata[$slug] ?? [
+                'name'        => $row->display_name,
+                'icon'        => '📋',
+                'description' => '',
+                'url'         => '',
+            ];
+        }
+
+        return $activities;
     }
 
     public function get_available_weeks() {
-        return array_keys($this->activities);
+        $order_table = $this->wpdb->prefix . 'mfsd_task_order';
+
+        if ($this->wpdb->get_var("SHOW TABLES LIKE '{$order_table}'") !== $order_table) {
+            return [1];
+        }
+
+        $course_id = $this->get_active_course_id();
+        if (!$course_id) return [1];
+
+        $weeks = $this->wpdb->get_col($this->wpdb->prepare(
+            "SELECT DISTINCT week FROM {$order_table}
+             WHERE course_id = %d AND active = 1
+             ORDER BY week ASC",
+            $course_id
+        ));
+
+        return $weeks ? array_map('intval', $weeks) : [1];
     }
 
     // ── Master progress builder ───────────────────────────────────────────────
     public function get_student_progress($student_id) {
         $progress = [];
 
-        foreach ($this->activities as $week_num => $week_activities) {
-            $progress[$week_num] = [];
+        // Always show at least 3 weeks; DB weeks with tasks are shown live,
+        // the rest are shown as coming soon.
+        $db_weeks  = $this->get_available_weeks();
+        $all_weeks = array_unique(array_merge($db_weeks, [1, 2, 3]));
+        sort($all_weeks);
+
+        foreach ($all_weeks as $week_num) {
+            $progress[$week_num]  = [];
+            $week_activities      = in_array($week_num, $db_weeks)
+                ? $this->get_week_activities($week_num)
+                : [];
+
+            if (empty($week_activities)) {
+                $progress[$week_num]['coming_soon'] = [
+                    'status' => 'coming_soon',
+                    'info'   => [
+                        'name'        => "Week {$week_num} Activities",
+                        'icon'        => '📚',
+                        'description' => 'Coming soon',
+                        'coming_soon' => true,
+                    ],
+                ];
+                continue;
+            }
 
             foreach ($week_activities as $activity_key => $activity_info) {
 
-                if (!empty($activity_info['coming_soon'])) {
-                    $progress[$week_num][$activity_key] = [
-                        'status' => 'coming_soon',
-                        'info'   => $activity_info,
-                    ];
-                    continue;
-                }
-
-                $task_slug = $activity_info['task_slug'] ?? $activity_key;
-                $cp_status = $this->get_task_progress_status($student_id, $task_slug);
+                $cp_status = $this->get_task_progress_status($student_id, $activity_key);
 
                 if ($cp_status === 'locked') {
                     $progress[$week_num][$activity_key] = [
@@ -195,7 +256,10 @@ class MFSD_Parent_Portal_Data {
                     continue;
                 }
 
-                $method = "get_{$activity_key}_status";
+                // Resolve status method: explicit override → slug-based convention
+                $method = $activity_info['status_method']
+                    ?? 'get_' . str_replace('-', '_', $activity_key) . '_status';
+
                 if (method_exists($this, $method)) {
                     $status_data         = $this->$method($student_id, $week_num);
                     $status_data['info'] = $activity_info;
@@ -205,12 +269,19 @@ class MFSD_Parent_Portal_Data {
                     }
 
                     $progress[$week_num][$activity_key] = $status_data;
+                } else {
+                    // No detailed status method — derive from task progress table alone
+                    $status = in_array($cp_status, ['in_progress', 'completed']) ? $cp_status : 'not_started';
+                    $progress[$week_num][$activity_key] = [
+                        'status'        => $status,
+                        'progress_text' => ucwords(str_replace('_', ' ', $status)),
+                        'info'          => $activity_info,
+                    ];
                 }
             }
         }
 
         // Second pass: lock any not_started activity that follows an incomplete one.
-        // This handles cases where wp_mfsd_task_progress has no row yet for future tasks.
         $found_incomplete = false;
         foreach ($progress as $week_num => &$week_activities) {
             foreach ($week_activities as $key => &$activity) {
@@ -244,6 +315,33 @@ class MFSD_Parent_Portal_Data {
     }
 
     // ── Plugin-specific status methods ────────────────────────────────────────
+
+    private function get_mfsd_solution_lens_status($student_id, $week_num = 1) {
+        $table = $this->wpdb->prefix . 'mfsd_lens_sessions';
+
+        if ($this->wpdb->get_var("SHOW TABLES LIKE '{$table}'") !== $table) {
+            return ['status' => 'not_available', 'message' => 'Solution Lens plugin not active'];
+        }
+
+        $session = $this->wpdb->get_row($this->wpdb->prepare(
+            "SELECT * FROM {$table} WHERE student_id = %d ORDER BY started_at DESC LIMIT 1",
+            $student_id
+        ));
+
+        if (!$session) {
+            return ['status' => 'not_started', 'progress_text' => 'Not started'];
+        }
+
+        if ($session->status === 'complete') {
+            return [
+                'status'        => 'completed',
+                'progress_text' => 'Completed',
+                'summary_type'  => $session->summary_type ?? null,
+            ];
+        }
+
+        return ['status' => 'in_progress', 'progress_text' => 'In progress'];
+    }
 
     private function get_word_association_status($student_id, $week_num = 1) {
         $table = $this->wpdb->prefix . 'mfsd_word_associations';
