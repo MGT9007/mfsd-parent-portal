@@ -165,7 +165,7 @@ class MFSD_Parent_Portal_Renderer {
         $student->student_name       = $user ? $user->display_name : 'Student';
         $student->year_group         = get_user_meta($student_id, 'year_group', true);
         $student->school             = get_user_meta($student_id, 'school', true);
-        $student->avatar_url         = get_avatar_url($student_id, ['size' => 80]);
+        $student->avatar_url         = $this->get_profile_picture_url($student_id);
         $student->is_primary_contact = false;
 
         ob_start();
@@ -482,14 +482,61 @@ class MFSD_Parent_Portal_Renderer {
     private function render_activity_results($activity_key, $activity) {
         ob_start();
         switch ($activity_key) {
-            case 'word_association':      $this->render_word_association_results($activity); break;
-            case 'junk_jobs':             $this->render_junk_jobs_results($activity);        break;
-            case 'personality_test_mbti': $this->render_personality_results($activity);      break;
-            case 'weekly_rag':            $this->render_rag_results($activity);              break;
-            case 'super_strengths':       $this->render_super_strengths_results($activity);  break;
+            case 'word_association':       $this->render_word_association_results($activity); break;
+            case 'junk_jobs':              $this->render_junk_jobs_results($activity);        break;
+            case 'personality_test_week_1': $this->render_personality_results($activity);     break;
+            case 'rag_week_1':
+            case 'rag_week_2':
+            case 'rag_week_3':             $this->render_rag_results($activity);              break;
+            case 'super_strengths':        $this->render_super_strengths_results($activity);  break;
             default: echo '<p>' . ($this->viewer_role === 'student' ? 'You\'ve completed this activity.' : 'Activity completed.') . '</p>';
         }
         return ob_get_clean();
+    }
+
+    // =========================================================================
+    // PROFILE PICTURE — ProfilePress meta first, then WP avatar, then fallback
+    // =========================================================================
+    private function get_profile_picture_url($student_id, $size = 80) {
+        // Check ProfilePress and other avatar plugin meta keys
+        $meta_keys = array(
+            'pp_profile_pic',
+            'pp_profile_photo',
+            'pp_profile_image',
+            'profilepress_profile_picture',
+            'profilepress_profile_image',
+            'wp_user_avatar',
+            'pp_custom_avatar',
+            'user_avatar',
+        );
+        foreach ($meta_keys as $key) {
+            $val = get_user_meta($student_id, $key, true);
+            if (!empty($val)) {
+                if (is_numeric($val)) {
+                    $url = wp_get_attachment_url((int) $val);
+                    if ($url) return esc_url($url);
+                } elseif (filter_var($val, FILTER_VALIDATE_URL)) {
+                    return esc_url($val);
+                }
+            }
+        }
+
+        // Parse get_avatar() HTML — ProfilePress hooks into this
+        $avatar_html = get_avatar($student_id, $size);
+        if ($avatar_html && preg_match('/src=["\']([^"\']+)["\']/', $avatar_html, $m)) {
+            $src = html_entity_decode($m[1]);
+            if (!empty($src) && strpos($src, 'gravatar.com') === false) {
+                return esc_url($src);
+            }
+        }
+
+        // Fall back to WP avatar with 404 default (prevents Gravatar placeholder)
+        $url = get_avatar_url($student_id, ['size' => $size, 'default' => '404']);
+        if ($url && strpos($url, '404') === false) {
+            return esc_url($url);
+        }
+
+        return '';
     }
 
     private function render_word_association_results($activity) {

@@ -83,9 +83,48 @@ class MFSD_Parent_Portal_Data {
         foreach ($results as &$student) {
             $student->year_group = get_user_meta($student->student_user_id, 'year_group', true);
             $student->school     = get_user_meta($student->student_user_id, 'school', true);
-            $student->avatar_url = get_avatar_url($student->student_user_id, ['size' => 80]);
+            $student->avatar_url = $this->get_profile_picture_url($student->student_user_id);
         }
         return $results;
+    }
+
+    private function get_profile_picture_url($student_id, $size = 80) {
+        $meta_keys = [
+            'pp_profile_pic',
+            'pp_profile_photo',
+            'pp_profile_image',
+            'profilepress_profile_picture',
+            'profilepress_profile_image',
+            'wp_user_avatar',
+            'pp_custom_avatar',
+            'user_avatar',
+        ];
+        foreach ($meta_keys as $key) {
+            $val = get_user_meta($student_id, $key, true);
+            if (!empty($val)) {
+                if (is_numeric($val)) {
+                    $url = wp_get_attachment_url((int) $val);
+                    if ($url) return esc_url($url);
+                } elseif (filter_var($val, FILTER_VALIDATE_URL)) {
+                    return esc_url($val);
+                }
+            }
+        }
+
+        $avatar_html = get_avatar($student_id, $size);
+        if ($avatar_html && preg_match('/src=["\']([^"\']+)["\']/', $avatar_html, $m)) {
+            $src = html_entity_decode($m[1]);
+            if (!empty($src) && strpos($src, 'gravatar.com') === false) {
+                return esc_url($src);
+            }
+        }
+
+        $url = get_avatar_url($student_id, ['size' => $size, 'default' => '404']);
+        if ($url && strpos($url, '404') === false) {
+            return esc_url($url);
+        }
+
+        return get_avatar_url($student_id, ['size' => $size]);
     }
 
     // ── Course-level % from task management tables ────────────────────────────
