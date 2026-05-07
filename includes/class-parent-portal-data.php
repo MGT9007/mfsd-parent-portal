@@ -13,7 +13,7 @@ class MFSD_Parent_Portal_Data {
     // Display metadata keyed by exact task_slug from wp_mfsd_task_order.
     // week/task_no ordering now comes from the DB — only icon/name/url/description live here.
     private $metadata = [
-        'mfsd_solution_lens' => [
+        'solution_lens' => [
             'name'        => 'The Solution Lens',
             'icon'        => '🔍',
             'description' => 'Gestalt image perception exercise',
@@ -151,9 +151,11 @@ class MFSD_Parent_Portal_Data {
         if (!$total) return 0;
 
         $completed = (int) $this->wpdb->get_var($this->wpdb->prepare(
-            "SELECT COUNT(*) FROM {$progress_table}
-             WHERE student_id = %d AND course_id = %d AND status = 'completed'",
-            $student_id, $course_id
+            "SELECT COUNT(*)
+             FROM {$progress_table} p
+             JOIN {$order_table} t ON t.task_slug = p.task_slug AND t.course_id = %d AND t.active = 1
+             WHERE p.student_id = %d AND p.status = 'completed'",
+            $course_id, $student_id
         ));
 
         return round(($completed / $total) * 100);
@@ -355,7 +357,7 @@ class MFSD_Parent_Portal_Data {
 
     // ── Plugin-specific status methods ────────────────────────────────────────
 
-    private function get_mfsd_solution_lens_status($student_id, $week_num = 1) {
+    private function get_solution_lens_status($student_id, $week_num = 1) {
         $table = $this->wpdb->prefix . 'mfsd_lens_sessions';
 
         if ($this->wpdb->get_var("SHOW TABLES LIKE '{$table}'") !== $table) {
