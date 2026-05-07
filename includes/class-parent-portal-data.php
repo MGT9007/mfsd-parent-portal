@@ -128,20 +128,19 @@ class MFSD_Parent_Portal_Data {
     }
 
     // ── Course-level % from task management tables ────────────────────────────
-    // Used by the blue header ring — matches landing page calculation exactly.
+    // Uses the same course_id source as get_week_activities() so both views
+    // are always counting the same set of tasks.
     public function get_course_percent($student_id) {
         $order_table    = $this->wpdb->prefix . 'mfsd_task_order';
         $progress_table = $this->wpdb->prefix . 'mfsd_task_progress';
-        $enrol_table    = $this->wpdb->prefix . 'mfsd_enrolments';
 
         if ($this->wpdb->get_var("SHOW TABLES LIKE '{$order_table}'") !== $order_table) {
             return 0;
         }
 
-        $course_id = (int) $this->wpdb->get_var($this->wpdb->prepare(
-            "SELECT course_id FROM {$enrol_table} WHERE student_id = %d LIMIT 1",
-            $student_id
-        ));
+        // Intentionally use get_active_course_id() — not the enrolments table —
+        // so this always counts the same tasks that get_week_activities() renders.
+        $course_id = $this->get_active_course_id();
         if (!$course_id) return 0;
 
         $total = (int) $this->wpdb->get_var($this->wpdb->prepare(
@@ -305,8 +304,12 @@ class MFSD_Parent_Portal_Data {
                     $status_data         = $this->$method($student_id, $week_num);
                     $status_data['info'] = $activity_info;
 
-                    if ($cp_status === 'completed' && $status_data['status'] !== 'completed') {
-                        $status_data['status'] = 'completed';
+                    // task_progress is the source of truth for completion.
+                    // Always override to 'completed' if the progress table says so,
+                    // regardless of what the plugin-specific method returns.
+                    if ($cp_status === 'completed') {
+                        $status_data['status']        = 'completed';
+                        $status_data['progress_text'] = $status_data['progress_text'] ?? 'Completed';
                     }
 
                     $progress[$week_num][$activity_key] = $status_data;
@@ -361,7 +364,10 @@ class MFSD_Parent_Portal_Data {
         $table = $this->wpdb->prefix . 'mfsd_lens_sessions';
 
         if ($this->wpdb->get_var("SHOW TABLES LIKE '{$table}'") !== $table) {
-            return ['status' => 'not_available', 'message' => 'Solution Lens plugin not active'];
+            // Table absent — fall back to whatever task_progress says (cp_status override
+            // in get_student_progress will apply). Return not_started so the activity
+            // is counted in the week total rather than silently excluded.
+            return ['status' => 'not_started', 'progress_text' => 'Not started'];
         }
 
         $session = $this->wpdb->get_row($this->wpdb->prepare(
