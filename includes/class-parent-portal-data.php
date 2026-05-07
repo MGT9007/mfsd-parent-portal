@@ -127,37 +127,23 @@ class MFSD_Parent_Portal_Data {
         return get_avatar_url($student_id, ['size' => $size]);
     }
 
-    // ── Course-level % from task management tables ────────────────────────────
-    // Uses the same course_id source as get_week_activities() so both views
-    // are always counting the same set of tasks.
+    // ── Course-level % ────────────────────────────────────────────────────────
+    // Derived from get_student_progress() so the ring always matches the task
+    // cards exactly — same status methods, same data sources.
     public function get_course_percent($student_id) {
-        $order_table    = $this->wpdb->prefix . 'mfsd_task_order';
-        $progress_table = $this->wpdb->prefix . 'mfsd_task_progress';
+        $progress  = $this->get_student_progress($student_id);
+        $total     = 0;
+        $completed = 0;
 
-        if ($this->wpdb->get_var("SHOW TABLES LIKE '{$order_table}'") !== $order_table) {
-            return 0;
+        foreach ($progress as $week_activities) {
+            foreach ($week_activities as $activity) {
+                if (in_array($activity['status'], ['coming_soon', 'not_available'])) continue;
+                $total++;
+                if ($activity['status'] === 'completed') $completed++;
+            }
         }
 
-        // Intentionally use get_active_course_id() — not the enrolments table —
-        // so this always counts the same tasks that get_week_activities() renders.
-        $course_id = $this->get_active_course_id();
-        if (!$course_id) return 0;
-
-        $total = (int) $this->wpdb->get_var($this->wpdb->prepare(
-            "SELECT COUNT(*) FROM {$order_table} WHERE course_id = %d AND active = 1",
-            $course_id
-        ));
-        if (!$total) return 0;
-
-        $completed = (int) $this->wpdb->get_var($this->wpdb->prepare(
-            "SELECT COUNT(*)
-             FROM {$progress_table} p
-             JOIN {$order_table} t ON t.task_slug = p.task_slug AND t.course_id = %d AND t.active = 1
-             WHERE p.student_id = %d AND p.status = 'completed'",
-            $course_id, $student_id
-        ));
-
-        return round(($completed / $total) * 100);
+        return $total > 0 ? round(($completed / $total) * 100) : 0;
     }
 
     // ── Courses for landing page ──────────────────────────────────────────────
