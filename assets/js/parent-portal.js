@@ -10,7 +10,39 @@
     // Initialize when DOM is ready
     $(document).ready(function() {
         initWeekAccordions();
+        initCourseTabs();
     });
+
+    /**
+     * Course landing page tabs (My Courses / New Courses / All Courses)
+     */
+    function initCourseTabs() {
+        $(document).on('click', '.mfsd-pp__tab', function() {
+            const $tab      = $(this);
+            const target    = $tab.data('tab');
+            const $landing  = $tab.closest('.mfsd-pp--landing');
+
+            // Update tab button states
+            $landing.find('.mfsd-pp__tab').each(function() {
+                const active = $(this).data('tab') === target;
+                $(this)
+                    .attr('aria-selected', active)
+                    .css({
+                        'color':              active ? '#4F46E5' : '#6B7280',
+                        'border-bottom-color': active ? '#4F46E5' : 'transparent'
+                    });
+            });
+
+            // Show/hide panels
+            $landing.find('.mfsd-pp__tab-panel').each(function() {
+                if ($(this).data('panel') === target) {
+                    $(this).css('display', '');
+                } else {
+                    $(this).css('display', 'none');
+                }
+            });
+        });
+    }
 
     /**
      * Initialize week accordions

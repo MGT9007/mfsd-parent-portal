@@ -30,17 +30,25 @@ class MFSD_Parent_Portal_Renderer {
                 <h1 class="mfsd-pp__title">My Courses</h1>
                 <p class="mfsd-pp__subtitle">Your High Performance Pathway journey</p>
             </div>
-            <?php if (empty($courses)): ?>
-                <div class="mfsd-pp-notice mfsd-pp-notice--info">
-                    <p>You don't have any courses yet. Check back soon!</p>
-                </div>
-            <?php else: ?>
-                <div class="mfsd-pp__course-grid">
-                    <?php foreach ($courses as $course): ?>
-                        <?php $this->render_course_card($course, $page_url, $student_id); ?>
-                    <?php endforeach; ?>
-                </div>
-            <?php endif; ?>
+
+            <?php echo $this->render_course_tabs(); ?>
+
+            <div class="mfsd-pp__tab-panel" data-panel="my-courses">
+                <?php if (empty($courses)): ?>
+                    <div class="mfsd-pp-notice mfsd-pp-notice--info">
+                        <p>You don't have any courses yet. Check back soon!</p>
+                    </div>
+                <?php else: ?>
+                    <div class="mfsd-pp__course-grid">
+                        <?php foreach ($courses as $course): ?>
+                            <?php $this->render_course_card($course, $page_url, $student_id); ?>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
+            </div>
+
+            <?php echo $this->render_coming_soon_panel('new-courses', '🚀', 'New courses will appear here when available.'); ?>
+            <?php echo $this->render_coming_soon_panel('all-courses', '📚', 'Browse all available courses here soon.'); ?>
         </div>
         <?php
         return ob_get_clean();
@@ -58,27 +66,81 @@ class MFSD_Parent_Portal_Renderer {
                 <h1 class="mfsd-pp__title">Parent Portal</h1>
                 <p class="mfsd-pp__subtitle">Track your child's progress in the High Performance Pathway</p>
             </div>
-            <?php foreach ($linked_students as $student): ?>
-                <?php $courses = $this->data->get_student_courses($student->student_user_id); ?>
-                <div class="mfsd-pp__landing-student">
-                    <div class="mfsd-pp__landing-student-header">
-                        <img src="<?php echo esc_url($student->avatar_url); ?>"
-                             class="mfsd-pp__landing-avatar" alt="">
-                        <h2 class="mfsd-pp__landing-student-name">
-                            <?php echo esc_html($student->student_name); ?>'s Courses
-                        </h2>
-                    </div>
-                    <?php if (empty($courses)): ?>
-                        <p class="mfsd-pp__not-started-text"><?php echo esc_html($student->student_name); ?> isn't enrolled on any courses yet.</p>
-                    <?php else: ?>
-                        <div class="mfsd-pp__course-grid">
-                            <?php foreach ($courses as $course): ?>
-                                <?php $this->render_course_card($course, $page_url, $student->student_user_id); ?>
-                            <?php endforeach; ?>
+
+            <?php echo $this->render_course_tabs(); ?>
+
+            <div class="mfsd-pp__tab-panel" data-panel="my-courses">
+                <?php foreach ($linked_students as $student): ?>
+                    <?php $courses = $this->data->get_student_courses($student->student_user_id); ?>
+                    <div class="mfsd-pp__landing-student">
+                        <div class="mfsd-pp__landing-student-header">
+                            <img src="<?php echo esc_url($student->avatar_url); ?>"
+                                 class="mfsd-pp__landing-avatar" alt="">
+                            <h2 class="mfsd-pp__landing-student-name">
+                                <?php echo esc_html($student->student_name); ?>'s Courses
+                            </h2>
                         </div>
-                    <?php endif; ?>
-                </div>
-            <?php endforeach; ?>
+                        <?php if (empty($courses)): ?>
+                            <p class="mfsd-pp__not-started-text"><?php echo esc_html($student->student_name); ?> isn't enrolled on any courses yet.</p>
+                        <?php else: ?>
+                            <div class="mfsd-pp__course-grid">
+                                <?php foreach ($courses as $course): ?>
+                                    <?php $this->render_course_card($course, $page_url, $student->student_user_id); ?>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+
+            <?php echo $this->render_coming_soon_panel('new-courses', '🚀', 'New courses will appear here when available.'); ?>
+            <?php echo $this->render_coming_soon_panel('all-courses', '📚', 'Browse all available courses here soon.'); ?>
+        </div>
+        <?php
+        return ob_get_clean();
+    }
+
+    // =========================================================================
+    // TAB BAR — shared by both landing views
+    // =========================================================================
+    private function render_course_tabs(): string {
+        ob_start();
+        ?>
+        <div class="mfsd-pp__tabs" role="tablist"
+             style="display:flex!important;gap:0!important;border-bottom:2px solid #E5E7EB!important;margin-bottom:24px!important;">
+            <button class="mfsd-pp__tab mfsd-pp__tab--active" role="tab"
+                    aria-selected="true" data-tab="my-courses"
+                    style="padding:10px 20px!important;background:none!important;border:none!important;border-bottom:3px solid #4F46E5!important;margin-bottom:-2px!important;font-size:14px!important;font-weight:600!important;color:#4F46E5!important;cursor:pointer!important;">
+                My Courses
+            </button>
+            <button class="mfsd-pp__tab" role="tab"
+                    aria-selected="false" data-tab="new-courses"
+                    style="padding:10px 20px!important;background:none!important;border:none!important;border-bottom:3px solid transparent!important;margin-bottom:-2px!important;font-size:14px!important;font-weight:600!important;color:#6B7280!important;cursor:pointer!important;">
+                New Courses
+            </button>
+            <button class="mfsd-pp__tab" role="tab"
+                    aria-selected="false" data-tab="all-courses"
+                    style="padding:10px 20px!important;background:none!important;border:none!important;border-bottom:3px solid transparent!important;margin-bottom:-2px!important;font-size:14px!important;font-weight:600!important;color:#6B7280!important;cursor:pointer!important;">
+                All Courses
+            </button>
+        </div>
+        <?php
+        return ob_get_clean();
+    }
+
+    // =========================================================================
+    // COMING SOON PANEL — shared placeholder for new tabs
+    // =========================================================================
+    private function render_coming_soon_panel(string $panel, string $icon, string $text): string {
+        ob_start();
+        ?>
+        <div class="mfsd-pp__tab-panel" data-panel="<?php echo esc_attr($panel); ?>"
+             style="display:none!important;">
+            <div style="text-align:center!important;padding:56px 24px!important;">
+                <p style="font-size:40px!important;margin:0 0 16px 0!important;line-height:1!important;"><?php echo $icon; ?></p>
+                <h3 style="font-size:18px!important;font-weight:700!important;color:#1F2937!important;margin:0 0 8px 0!important;">Coming Soon</h3>
+                <p style="font-size:14px!important;color:#6B7280!important;margin:0!important;"><?php echo esc_html($text); ?></p>
+            </div>
         </div>
         <?php
         return ob_get_clean();
