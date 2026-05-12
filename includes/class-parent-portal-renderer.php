@@ -30,25 +30,17 @@ class MFSD_Parent_Portal_Renderer {
                 <h1 class="mfsd-pp__title">My Courses</h1>
                 <p class="mfsd-pp__subtitle">Your High Performance Pathway journey</p>
             </div>
-
-            <?php echo $this->render_course_tabs(); ?>
-
-            <div class="mfsd-pp__tab-panel" data-panel="my-courses">
-                <?php if (empty($courses)): ?>
-                    <div class="mfsd-pp-notice mfsd-pp-notice--info">
-                        <p>You don't have any courses yet. Check back soon!</p>
-                    </div>
-                <?php else: ?>
-                    <div class="mfsd-pp__course-grid">
-                        <?php foreach ($courses as $course): ?>
-                            <?php $this->render_course_card($course, $page_url, $student_id); ?>
-                        <?php endforeach; ?>
-                    </div>
-                <?php endif; ?>
-            </div>
-
-            <?php echo $this->render_coming_soon_panel('new-courses', '🚀', 'New courses will appear here when available.'); ?>
-            <?php echo $this->render_coming_soon_panel('all-courses', '📚', 'Browse all available courses here soon.'); ?>
+            <?php if (empty($courses)): ?>
+                <div class="mfsd-pp-notice mfsd-pp-notice--info">
+                    <p>You don't have any courses yet. Check back soon!</p>
+                </div>
+            <?php else: ?>
+                <div class="mfsd-pp__course-grid">
+                    <?php foreach ($courses as $course): ?>
+                        <?php $this->render_course_card($course, $page_url, $student_id); ?>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
         </div>
         <?php
         return ob_get_clean();
