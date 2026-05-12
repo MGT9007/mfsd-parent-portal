@@ -414,7 +414,12 @@ class MFSD_Parent_Portal_Renderer {
         $s      = $this->viewer_role === 'student';
         $url    = $info['url'] ?? '';
 
-        $clickable = $url && in_array($status, ['not_started', 'in_progress', 'completed']);
+        // Parents only follow links on completed tasks; students can access any active task.
+        $clickable = $url && (
+            $s
+                ? in_array($status, ['not_started', 'in_progress', 'completed'])
+                : $status === 'completed'
+        );
 
         $border_colors = [
             'completed'   => '#10B981',
