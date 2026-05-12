@@ -3,7 +3,7 @@
  * Plugin Name: MFSD Parent Portal
  * Plugin URI: https://mfsd.me
  * Description: Combined parent and student progress portal for the High Performance Pathway
- * Version: 4.4.2
+ * Version: 4.4.3
  * Author: MisterT9007
  * Author URI: https://mfsd.me
  * Text Domain: mfsd-parent-portal
@@ -11,7 +11,7 @@
 
 if (!defined('ABSPATH')) exit;
 
-define('MFSD_PARENT_PORTAL_VERSION', '4.4.2');
+define('MFSD_PARENT_PORTAL_VERSION', '4.4.3');
 define('MFSD_PARENT_PORTAL_PATH',    plugin_dir_path(__FILE__));
 define('MFSD_PARENT_PORTAL_URL',     plugin_dir_url(__FILE__));
 
@@ -37,6 +37,15 @@ class MFSD_Parent_Portal {
     private function init_hooks() {
         add_action('wp_enqueue_scripts', [$this, 'enqueue_assets']);
         add_shortcode('mfsd_parent_portal', [$this, 'render_portal']);
+        add_filter('body_class', [$this, 'add_body_classes']);
+    }
+
+    public function add_body_classes($classes) {
+        global $post;
+        if (is_a($post, 'WP_Post') && has_shortcode($post->post_content, 'mfsd_parent_portal')) {
+            $classes[] = 'mfsd-no-page-title';
+        }
+        return $classes;
     }
 
     public function enqueue_assets() {
