@@ -1,6 +1,6 @@
 <?php
 /**
- * Parent Portal Renderer
+ * Parent Portal Renderer v4.4.7
  * Supports parent view (linked students) and student self-view.
  * $viewer_role: 'parent' | 'student'
  */
@@ -11,6 +11,7 @@ class MFSD_Parent_Portal_Renderer {
 
     private $data;
     private $viewer_role;
+    private $current_student_id = 0;
 
     public function __construct(MFSD_Parent_Portal_Data $data, $viewer_role = 'parent') {
         $this->data        = $data;
@@ -248,6 +249,7 @@ class MFSD_Parent_Portal_Renderer {
     // STUDENT SECTION (shared by parent and student detail views)
     // =========================================================================
     private function render_student_section($student) {
+        $this->current_student_id = (int) $student->student_user_id;
         $progress       = $this->data->get_student_progress($student->student_user_id);
         $course_percent = $this->data->get_course_percent($student->student_user_id);
         ?>
@@ -413,6 +415,12 @@ class MFSD_Parent_Portal_Renderer {
         $info   = $activity['info'] ?? [];
         $s      = $this->viewer_role === 'student';
         $url    = $info['url'] ?? '';
+
+        // When a parent follows a link, append the student_id so the target plugin
+        // can look up the student's session rather than the parent's.
+        if ( !$s && $url && $this->current_student_id > 0 ) {
+            $url = add_query_arg( 'student_id', $this->current_student_id, $url );
+        }
 
         // Parents only follow links on completed tasks; students can access any active task.
         $clickable = $url && (
