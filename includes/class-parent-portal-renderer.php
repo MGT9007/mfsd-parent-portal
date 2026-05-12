@@ -241,7 +241,7 @@ class MFSD_Parent_Portal_Renderer {
     // =========================================================================
     private function render_back_link() {
         $back = get_permalink();
-        return '<a href="' . esc_url($back) . '" class="mfsd-pp__back-link">← Back to my courses</a>';
+        return '<a href="' . esc_url($back) . '" class="mfsd-pp__back-link">← Back to courses</a>';
     }
 
     // =========================================================================

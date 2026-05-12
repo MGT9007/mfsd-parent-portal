@@ -34,7 +34,7 @@ class MFSD_Parent_Portal_Data {
         'personality_test_week_1' => [
             'name'          => 'Who Am I Part 1',
             'icon'          => '🧠',
-            'description'   => 'Myers-Briggs personality assessment',
+            'description'   => 'Personality assessment',
             'url'           => 'https://mfsd.me/my-future-self-foundation-course/week-1/week-1-personality-test/',
             'status_method' => 'get_personality_test_mbti_status',
         ],
