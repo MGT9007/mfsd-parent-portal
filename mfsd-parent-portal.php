@@ -3,7 +3,7 @@
  * Plugin Name: MFSD Parent Portal
  * Plugin URI: https://mfsd.me
  * Description: Combined parent and student progress portal for the High Performance Pathway
- * Version: 4.4.5
+ * Version: 4.4.6
  * Author: MisterT9007
  * Author URI: https://mfsd.me
  * Text Domain: mfsd-parent-portal
@@ -11,7 +11,7 @@
 
 if (!defined('ABSPATH')) exit;
 
-define('MFSD_PARENT_PORTAL_VERSION', '4.4.5');
+define('MFSD_PARENT_PORTAL_VERSION', '4.4.6');
 define('MFSD_PARENT_PORTAL_PATH',    plugin_dir_path(__FILE__));
 define('MFSD_PARENT_PORTAL_URL',     plugin_dir_url(__FILE__));
 

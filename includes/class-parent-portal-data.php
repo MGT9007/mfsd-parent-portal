@@ -17,7 +17,7 @@ class MFSD_Parent_Portal_Data {
             'name'        => 'The Solution Lens',
             'icon'        => '🔍',
             'description' => 'Gestalt image perception exercise',
-            'url'         => 'https://mfsd.me/my-future-self-foundation-course/week-1/solution-lens/',
+            'url'         => 'https://mfsd.me/my-future-self-foundation-course/week-1/the-solution-lens/',
         ],
         'word_association' => [
             'name'        => 'Word Association',
