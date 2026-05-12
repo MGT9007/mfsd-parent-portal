@@ -56,7 +56,7 @@ class MFSD_Parent_Portal_Renderer {
         <div class="mfsd-pp mfsd-pp--landing mfsd-pp--parent">
             <div class="mfsd-pp__header">
                 <h1 class="mfsd-pp__title">Parent Portal</h1>
-                <p class="mfsd-pp__subtitle">Track your child's progress in the High Performance Pathway</p>
+                <p class="mfsd-pp__subtitle">Track your child's progress</p>
             </div>
 
             <?php echo $this->render_course_tabs(); ?>
@@ -198,7 +198,7 @@ class MFSD_Parent_Portal_Renderer {
             <div class="mfsd-pp__header">
                 <?php echo $this->render_back_link(); ?>
                 <h1 class="mfsd-pp__title">Parent Portal</h1>
-                <p class="mfsd-pp__subtitle">Track your child's progress in the High Performance Pathway</p>
+                <p class="mfsd-pp__subtitle">Track your child's progress</p>
             </div>
             <?php foreach ($linked_students as $student): ?>
                 <?php $this->render_student_section($student); ?>
