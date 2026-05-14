@@ -321,7 +321,7 @@ class MFSD_Parent_Portal_Renderer {
     // WEEK SECTION
     // =========================================================================
     private function render_week_section($week_num, $week_progress) {
-        $week_names         = [1 => 'Week 1: Foundation', 2 => 'Week 2: Exploration', 3 => 'Week 3: Discovery'];
+        $week_names         = [1 => 'Week 1: Self Awareness & the Solution Lens', 2 => 'Week 2: Interest, barriers and turning dreams into plans', 3 => 'Week 3: High performance success beliefs & future direction'];
         $week_name          = $week_names[$week_num] ?? "Week {$week_num}";
         $is_all_coming_soon = $this->is_week_coming_soon($week_progress);
         $expanded           = $week_num === 1;
