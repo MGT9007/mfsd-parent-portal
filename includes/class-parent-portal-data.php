@@ -12,47 +12,49 @@ class MFSD_Parent_Portal_Data {
 
     // Display metadata keyed by exact task_slug from wp_mfsd_task_order.
     // week/task_no ordering now comes from the DB — only icon/name/url/description live here.
-    private $metadata = [
-        'solution_lens' => [
-            'name'        => 'The Solution Lens',
-            'icon'        => '🔍',
-            'description' => 'Gestalt image perception exercise',
-            'url'         => 'https://mfsd.me/my-future-self-foundation-course/week-1/the-solution-lens/',
-        ],
-        'word_association' => [
-            'name'        => 'Word Association',
-            'icon'        => '💭',
-            'description' => 'Exploring thought patterns and associations',
-            'url'         => 'https://mfsd.me/my-future-self-foundation-course/week-1/word-association/',
-        ],
-        'junk_jobs' => [
-            'name'        => 'Junk Jobs',
-            'icon'        => '🗑️',
-            'description' => 'Identifying careers to avoid',
-            'url'         => 'https://mfsd.me/my-future-self-foundation-course/week-2/junk-jobs/',
-        ],
-        'personality_test_week_1' => [
-            'name'          => 'Who Am I Part 1',
-            'icon'          => '🧠',
-            'description'   => 'Personality assessment',
-            'url'           => 'https://mfsd.me/my-future-self-foundation-course/week-1/week-1-personality-test/',
-            'status_method' => 'get_personality_test_mbti_status',
-        ],
-        'super_strengths' => [
-            'name'        => 'Super Strengths',
-            'icon'        => '💪',
-            'description' => 'Discovering personal strengths',
-            'url'         => 'https://mfsd.me/my-future-self-foundation-course/week-1/super-strengths/',
-        ],
-        'rag_week_1' => [
-            'name'          => 'Weekly Check-in',
-            'icon'          => '🚦',
-            'description'   => 'Red/Amber/Green weekly reflection',
-            'url'           => 'https://mfsd.me/my-future-self-foundation-course/week-1/week-1-rag/',
-            'status_method' => 'get_weekly_rag_status',
-        ],
-        // Add new task slugs here as new tasks are built
-    ];
+    private function get_metadata(): array {
+        return [
+            'solution_lens' => [
+                'name'        => 'The Solution Lens',
+                'icon'        => '🔍',
+                'description' => 'Gestalt image perception exercise',
+                'url'         => home_url('/my-future-self-foundation-course/week-1/the-solution-lens/'),
+            ],
+            'word_association' => [
+                'name'        => 'Word Association',
+                'icon'        => '💭',
+                'description' => 'Exploring thought patterns and associations',
+                'url'         => home_url('/my-future-self-foundation-course/week-1/word-association/'),
+            ],
+            'junk_jobs' => [
+                'name'        => 'Junk Jobs',
+                'icon'        => '🗑️',
+                'description' => 'Identifying careers to avoid',
+                'url'         => home_url('/my-future-self-foundation-course/week-2/junk-jobs/'),
+            ],
+            'personality_test_week_1' => [
+                'name'          => 'Who Am I Part 1',
+                'icon'          => '🧠',
+                'description'   => 'Personality assessment',
+                'url'           => home_url('/my-future-self-foundation-course/week-1/week-1-personality-test/'),
+                'status_method' => 'get_personality_test_mbti_status',
+            ],
+            'super_strengths' => [
+                'name'        => 'Super Strengths',
+                'icon'        => '💪',
+                'description' => 'Discovering personal strengths',
+                'url'         => home_url('/my-future-self-foundation-course/week-1/super-strengths/'),
+            ],
+            'rag_week_1' => [
+                'name'          => 'Weekly Check-in',
+                'icon'          => '🚦',
+                'description'   => 'Red/Amber/Green weekly reflection',
+                'url'           => home_url('/my-future-self-foundation-course/week-1/week-1-rag/'),
+                'status_method' => 'get_weekly_rag_status',
+            ],
+            // Add new task slugs here as new tasks are built
+        ];
+    }
 
     public function __construct() {
         global $wpdb;
@@ -200,7 +202,7 @@ class MFSD_Parent_Portal_Data {
         $activities = [];
         foreach ($rows as $row) {
             $slug = $row->task_slug;
-            $activities[$slug] = $this->metadata[$slug] ?? [
+            $activities[$slug] = $this->get_metadata()[$slug] ?? [
                 'name'        => $row->display_name,
                 'icon'        => '📋',
                 'description' => '',
