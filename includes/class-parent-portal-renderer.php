@@ -617,12 +617,22 @@ class MFSD_Parent_Portal_Renderer {
     }
 
     private function render_junk_jobs_results($activity) {
-        $jobs = $activity['jobs'] ?? [];
-        $s    = $this->viewer_role === 'student';
+        // Results live in the task itself (child's view + Parent view tabs) — the card links there.
+        $dreams = $activity['dream_jobs'] ?? [];
+        $jobs   = $activity['jobs'] ?? [];
+        $s      = $this->viewer_role === 'student';
         ?>
         <p style="margin:0!important;font-size:14px!important;color:#374151!important;">
-            <strong><?php echo count($jobs); ?></strong><?php echo $s ? ' jobs you\'ve identified' : ' jobs identified'; ?>
+            <?php if (!empty($activity['legacy'])): ?>
+                <strong><?php echo count($jobs); ?></strong> junk jobs done · dream jobs still to add
+            <?php else: ?>
+                <strong><?php echo count($dreams); ?></strong> dream jobs · <strong><?php echo count($jobs); ?></strong> junk jobs
+                <?php if (!empty($dreams[0])): ?>&nbsp;·&nbsp; Top dream: <strong><?php echo esc_html($dreams[0]); ?></strong><?php endif; ?>
+            <?php endif; ?>
         </p>
+        <?php if (!$s && empty($activity['legacy'])): ?>
+            <p style="margin:6px 0 0!important;font-size:13px!important;color:#6B7280!important;">Open to see their results and Steve's parent summary.</p>
+        <?php endif; ?>
         <?php
     }
 

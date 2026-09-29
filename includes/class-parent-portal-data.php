@@ -27,9 +27,9 @@ class MFSD_Parent_Portal_Data {
                 'url'         => home_url('/my-future-self-foundation-course/week-1/word-association/'),
             ],
             'junk_jobs' => [
-                'name'        => 'Junk Jobs',
+                'name'        => 'Dream & Junk Jobs',
                 'icon'        => '🗑️',
-                'description' => 'Identifying careers to avoid',
+                'description' => 'Dream jobs, jobs to avoid, and what they need from a career',
                 'url'         => home_url('/my-future-self-foundation-course/week-2/junk-jobs/'),
             ],
             'personality_test_week_1' => [
@@ -417,24 +417,33 @@ class MFSD_Parent_Portal_Data {
         if (!$result) {
             return ['status' => 'not_started', 'progress' => 0, 'progress_text' => 'Not started'];
         }
+        // Dream & Junk Jobs v5: dream half, then junk half, then combined results.
+        // A legacy junk-only row (completed, no dream half) stays completed for the course.
         $status_map = [
-            'not_started' => ['status' => 'not_started', 'step' => 0, 'text' => 'Not started'],
-            'in_progress' => ['status' => 'in_progress', 'step' => 1, 'text' => 'Selecting jobs'],
-            'reasons'     => ['status' => 'in_progress', 'step' => 2, 'text' => 'Writing reasons'],
-            'completed'   => ['status' => 'completed',   'step' => 4, 'text' => 'Completed'],
+            'not_started'       => ['status' => 'not_started', 'step' => 0, 'text' => 'Not started'],
+            'dream_in_progress' => ['status' => 'in_progress', 'step' => 1, 'text' => 'Choosing dream jobs'],
+            'dream_reasons'     => ['status' => 'in_progress', 'step' => 2, 'text' => 'Writing dream job reasons'],
+            'dream_done'        => ['status' => 'in_progress', 'step' => 3, 'text' => 'Dream half done'],
+            'in_progress'       => ['status' => 'in_progress', 'step' => 4, 'text' => 'Choosing junk jobs'],
+            'reasons'           => ['status' => 'in_progress', 'step' => 5, 'text' => 'Writing junk job reasons'],
+            'completed'         => ['status' => 'completed',   'step' => 6, 'text' => 'Completed'],
         ];
-        $info = $status_map[$result->status] ?? $status_map['not_started'];
+        $info       = $status_map[$result->status] ?? $status_map['not_started'];
+        $dream_jobs = !empty($result->dream_ranking_json) ? json_decode($result->dream_ranking_json, true) : [];
+        $legacy     = empty($result->dream_items_json) && in_array($result->status, ['in_progress', 'reasons', 'completed'], true);
+        if ($legacy && $result->status === 'completed') {
+            $info['text'] = 'Junk half done · dream half to do';
+        }
         return [
             'status'        => $info['status'],
             'db_status'     => $result->status,
             'progress'      => $info['step'],
-            'progress_max'  => 4,
+            'progress_max'  => 6,
             'progress_text' => $info['text'],
+            'legacy'        => $legacy,
+            'dream_jobs'    => is_array($dream_jobs) ? $dream_jobs : [],
             'jobs'          => !empty($result->jobs_json)    ? json_decode($result->jobs_json, true)    : [],
             'ranking'       => !empty($result->ranking_json) ? json_decode($result->ranking_json, true) : [],
-            'reasons'       => !empty($result->reasons_json) ? json_decode($result->reasons_json, true) : [],
-            'analysis'      => $result->analysis,
-            'mbti_type'     => $result->mbti_type,
         ];
     }
 
