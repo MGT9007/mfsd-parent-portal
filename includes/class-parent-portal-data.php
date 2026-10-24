@@ -52,6 +52,41 @@ class MFSD_Parent_Portal_Data {
                 'url'           => home_url('/my-future-self-foundation-course/week-1/week-1-rag/'),
                 'status_method' => 'get_weekly_rag_status',
             ],
+            // 5.0.0 — Week 2 order (spec v4.5 §1). Confirm URLs against the live pages before deploying.
+            'who_inspired' => [
+                'name'        => 'Who Inspired You Most',
+                'icon'        => '🌟',
+                'description' => 'The people who inspire them, a family guessing game',
+                'url'         => home_url('/my-future-self-foundation-course/week-2/who-inspired-you-most/'),
+            ],
+            'wider_interests' => [
+                'name'          => 'Wider Interests',
+                'icon'          => '❤️',
+                'description'   => 'What they love, what they want to try, and their Spark',
+                'url'           => home_url('/my-future-self-foundation-course/week-2/wider-interests/'),
+                'status_method' => 'get_wider_interests_status',
+            ],
+            'dream_life' => [
+                'name'          => 'Dream Life',
+                'icon'          => '🌈',
+                'description'   => 'Their picture of their dream life, and first steps towards it',
+                'url'           => home_url('/my-future-self-foundation-course/week-2/dream-life/'),
+                'status_method' => 'get_dream_life_status',
+            ],
+            'rag_week_2' => [
+                'name'          => 'Weekly Check-in',
+                'icon'          => '🚦',
+                'description'   => 'Red/Amber/Green weekly reflection',
+                'url'           => home_url('/my-future-self-foundation-course/week-2/week-2-rag/'),
+                'status_method' => 'get_weekly_rag_status',
+            ],
+            'rag_week_3' => [
+                'name'          => 'Weekly Check-in',
+                'icon'          => '🚦',
+                'description'   => 'Red/Amber/Green weekly reflection',
+                'url'           => home_url('/my-future-self-foundation-course/week-3/week-3-rag/'),
+                'status_method' => 'get_weekly_rag_status',
+            ],
             // Add new task slugs here as new tasks are built
         ];
     }
@@ -331,6 +366,70 @@ class MFSD_Parent_Portal_Data {
         return $progress;
     }
 
+    // ── 5.0.0 helpers ─────────────────────────────────────────────────────────
+
+    private function table_exists(string $table): bool {
+        return $this->wpdb->get_var($this->wpdb->prepare('SHOW TABLES LIKE %s', $table)) === $table;
+    }
+
+    /** The viewing parent's user ID, or 0 when the student is viewing their own progress. */
+    private function viewing_parent_id($student_id): int {
+        $viewer = (int) get_current_user_id();
+        // Admins checking a student see everything, ungated (they are not a parent playing the game).
+        if ($viewer && user_can($viewer, 'manage_options')) return 0;
+        return ($viewer && $viewer !== (int) $student_id) ? $viewer : 0;
+    }
+
+    // ── Commitments (spec v4.5 §3) ───────────────────────────────────────────
+
+    /**
+     * A child's commitment cards that this parent may see — exactly what the Commitments
+     * parent routes show: no card held for moderation, no card a producer hides from this
+     * parent (mfsd_commitment_visible_to_parent). Empty when mfsd-commitments is inactive.
+     */
+    public function get_visible_commitments(int $child_id, int $parent_id): array {
+        if (!function_exists('mfsd_get_commitments')) return [];
+        // Run the 48-hour auto-confirm check first (mfsd_get_open_commitments() does it; mfsd_get_commitments()
+        // doesn't), so "Waiting for you" never lists a card that has already been confirmed automatically.
+        if (function_exists('mfsd_get_open_commitments')) mfsd_get_open_commitments($child_id);
+        $out = [];
+        foreach ((array) mfsd_get_commitments($child_id) as $card) {
+            if (function_exists('mfsd_safeguarding_is_withheld')
+                && mfsd_safeguarding_is_withheld($child_id, 'commitments', (string) $card['id'])) {
+                continue; // held for moderation: no card, no count, no placeholder
+            }
+            if (!apply_filters('mfsd_commitment_visible_to_parent', true, $card, $parent_id)) {
+                continue; // e.g. Dream & Junk Jobs before this parent plays the guessing game
+            }
+            $out[] = $card;
+        }
+        return $out;
+    }
+
+    /** Panel data for the parent view, or null when there's nothing to show. */
+    public function get_commitments_panel(int $child_id, int $parent_id): ?array {
+        if (!function_exists('mfsd_get_open_commitments')) return null;
+        $cards = $this->get_visible_commitments($child_id, $parent_id);
+        if (!$cards) return null;
+        $sources = (array) apply_filters('mfsd_commitment_sources', []);
+        $waiting = $talk = [];
+        $open = $done = 0;
+        foreach ($cards as $c) {
+            $c['source_label'] = (string) ($sources[$c['source_task']]['label'] ?? ucwords(str_replace('_', ' ', (string) $c['source_task'])));
+            if ($c['status'] === 'validated') { $done++; continue; }
+            if (!in_array($c['status'], ['open', 'carried', 'not_yet', 'checked_in'], true)) continue;
+            $open++;
+            if ($c['status'] === 'checked_in') {
+                if (empty($c['talk_requested_at'])) $waiting[] = $c; else $talk[] = $c;
+            }
+        }
+        if (!$open && !$done) return null;
+        $by_checkin = fn($a, $b) => strcmp((string) $b['checked_in_at'], (string) $a['checked_in_at']);
+        usort($waiting, $by_checkin);
+        usort($talk, $by_checkin);
+        return ['waiting' => $waiting, 'talk' => $talk, 'open' => $open, 'done' => $done];
+    }
+
     // ── Course management: read wp_mfsd_task_progress ─────────────────────────
     private function get_task_progress_status($student_id, $task_slug) {
         $table = $this->wpdb->prefix . 'mfsd_task_progress';
@@ -426,7 +525,8 @@ class MFSD_Parent_Portal_Data {
             'dream_done'        => ['status' => 'in_progress', 'step' => 3, 'text' => 'Dream half done'],
             'in_progress'       => ['status' => 'in_progress', 'step' => 4, 'text' => 'Choosing junk jobs'],
             'reasons'           => ['status' => 'in_progress', 'step' => 5, 'text' => 'Writing junk job reasons'],
-            'completed'         => ['status' => 'completed',   'step' => 6, 'text' => 'Completed'],
+            'commit'            => ['status' => 'in_progress', 'step' => 6, 'text' => 'Choosing their action'], // 5.0.0 (DJJ §17)
+            'completed'         => ['status' => 'completed',   'step' => 7, 'text' => 'Completed'],
         ];
         $info       = $status_map[$result->status] ?? $status_map['not_started'];
         $dream_jobs = !empty($result->dream_ranking_json) ? json_decode($result->dream_ranking_json, true) : [];
@@ -434,17 +534,110 @@ class MFSD_Parent_Portal_Data {
         if ($legacy && $result->status === 'completed') {
             $info['text'] = 'Junk half done · dream half to do';
         }
-        return [
+        $out = [
             'status'        => $info['status'],
             'db_status'     => $result->status,
             'progress'      => $info['step'],
-            'progress_max'  => 6,
+            'progress_max'  => 7,
             'progress_text' => $info['text'],
             'legacy'        => $legacy,
             'dream_jobs'    => is_array($dream_jobs) ? $dream_jobs : [],
             'jobs'          => !empty($result->jobs_json)    ? json_decode($result->jobs_json, true)    : [],
             'ranking'       => !empty($result->ranking_json) ? json_decode($result->ranking_json, true) : [],
         ];
+
+        // Guessing-game gate (DJJ §17.6): a parent sees no jobs until THEY have played.
+        // Only once the guesses table exists (DJJ 7.0.0); before that, behaviour is unchanged.
+        $parent_id = $this->viewing_parent_id($student_id);
+        $gtable    = $this->wpdb->prefix . 'mfsd_djj_guesses';
+        if ($parent_id && $result->status === 'completed' && !$legacy && $this->table_exists($gtable)) {
+            $guess = $this->wpdb->get_row($this->wpdb->prepare(
+                "SELECT score, deck_json, completed_at FROM {$gtable} WHERE parent_id = %d AND child_id = %d LIMIT 1",
+                $parent_id, $student_id
+            ));
+            if (!$guess || empty($guess->completed_at)) {
+                $out['gated']         = true;
+                $out['progress_text'] = 'Completed · play the guessing game to see their results';
+                $out['dream_jobs']    = [];
+                $out['jobs']          = [];
+                $out['ranking']       = [];
+            } else {
+                $deck = json_decode((string) $guess->deck_json, true);
+                $out['guess_text'] = sprintf('You guessed %d of %d', (int) $guess->score, is_array($deck) ? count($deck) : 0);
+            }
+        }
+        return $out;
+    }
+
+    // ── Wider Interests (spec v4.5 §2.1) — never exposes loves, tries, the Spark or swipes ──
+    private function get_wider_interests_status($student_id, $week_num = 2) {
+        $table = $this->wpdb->prefix . 'mfsd_wi_results';
+        if (!$this->table_exists($table)) {
+            return ['status' => 'not_started', 'progress' => 0, 'progress_max' => 3, 'progress_text' => 'Not started'];
+        }
+        $row = $this->wpdb->get_row($this->wpdb->prepare(
+            "SELECT loves_ranked, spark_commitment_id, completed_at FROM {$table} WHERE user_id = %d LIMIT 1",
+            $student_id
+        ));
+        if (!$row) {
+            return ['status' => 'not_started', 'progress' => 0, 'progress_max' => 3, 'progress_text' => 'Not started'];
+        }
+        if (empty($row->completed_at)) {
+            $loves = json_decode((string) $row->loves_ranked, true);
+            if (!empty($loves) && empty($row->spark_commitment_id)) {
+                return ['status' => 'in_progress', 'progress' => 2, 'progress_max' => 3, 'progress_text' => 'Choosing their Spark'];
+            }
+            return ['status' => 'in_progress', 'progress' => 1, 'progress_max' => 3, 'progress_text' => 'Exploring interests'];
+        }
+        $out = ['status' => 'completed', 'progress' => 3, 'progress_max' => 3, 'progress_text' => 'Completed'];
+        $parent_id = $this->viewing_parent_id($student_id);
+        $ptable    = $this->wpdb->prefix . 'mfsd_wi_predictions';
+        if ($parent_id && $this->table_exists($ptable)) {
+            $pred = $this->wpdb->get_row($this->wpdb->prepare(
+                "SELECT score, revealed_at FROM {$ptable} WHERE parent_id = %d AND child_id = %d LIMIT 1",
+                $parent_id, $student_id
+            ));
+            if (!$pred || empty($pred->revealed_at)) {
+                $out['gated']         = true;
+                $out['progress_text'] = 'Completed · make your prediction to see their results';
+            } else {
+                $score = rtrim(rtrim(number_format((float) $pred->score, 1), '0'), '.');
+                $out['progress_text'] = 'Completed · you guessed ' . $score . ' of 3';
+            }
+        }
+        return $out;
+    }
+
+    // ── Dream Life (spec v4.5 §2.2) ───────────────────────────────────────────
+    private function get_dream_life_status($student_id, $week_num = 2) {
+        $table = $this->wpdb->prefix . 'mfsd_dream_life_results';
+        if (!$this->table_exists($table)) {
+            return ['status' => 'not_started', 'progress' => 0, 'progress_max' => 4, 'progress_text' => 'Not started'];
+        }
+        $db_status = $this->wpdb->get_var($this->wpdb->prepare(
+            "SELECT status FROM {$table} WHERE user_id = %d LIMIT 1", $student_id
+        ));
+        $map = [
+            'not_started' => ['not_started', 0, 'Not started'],
+            'in_progress' => ['in_progress', 1, 'Choosing their dreams'],
+            'reasons'     => ['in_progress', 2, 'Writing about their dreams'],
+            'first_steps' => ['in_progress', 3, 'Choosing their first steps'], // Dream Life 3.0.0
+            'completed'   => ['completed',   4, 'Completed'],
+        ];
+        $m = $map[$db_status ?: 'not_started'] ?? $map['not_started'];
+        $out = ['status' => $m[0], 'progress' => $m[1], 'progress_max' => 4, 'progress_text' => $m[2]];
+        if ($m[0] === 'completed' && function_exists('mfsd_get_commitments')) {
+            $cards = $this->viewing_parent_id($student_id)
+                ? $this->get_visible_commitments((int) $student_id, $this->viewing_parent_id($student_id))
+                : (array) mfsd_get_commitments((int) $student_id);
+            $steps = array_filter($cards, fn($c) => ($c['source_task'] ?? '') === 'dream_life'
+                && in_array($c['status'] ?? '', ['open', 'carried', 'not_yet', 'checked_in'], true));
+            $n = count($steps);
+            if ($n > 0) {
+                $out['progress_text'] = 'Completed · ' . $n . ' first step' . ($n === 1 ? '' : 's') . ' on their home screen';
+            }
+        }
+        return $out;
     }
 
     private function get_personality_test_mbti_status($student_id, $week_num = 1) {

@@ -1,6 +1,6 @@
 <?php
 /**
- * Parent Portal Renderer v4.4.7
+ * Parent Portal Renderer v5.0.0 (commitments panel, Week 2 tasks, guessing-game gates)
  * Supports parent view (linked students) and student self-view.
  * $viewer_role: 'parent' | 'student'
  */
@@ -281,12 +281,64 @@ class MFSD_Parent_Portal_Renderer {
                 </div>
             </div>
 
+            <?php if ($this->viewer_role === 'parent') $this->render_commitments_panel((int) $student->student_user_id); ?>
+
             <div style="display:flex!important;flex-direction:column!important;gap:16px!important;">
                 <?php foreach ($progress as $week_num => $week_progress): ?>
                     <?php $this->render_week_section($week_num, $week_progress); ?>
                 <?php endforeach; ?>
             </div>
         </div>
+        <?php
+    }
+
+    // =========================================================================
+    // COMMITMENTS PANEL (spec v4.5 §3) — parent view only, read-only.
+    // Confirming happens in the home-screen widget.
+    // =========================================================================
+    private function render_commitments_panel(int $child_id) {
+        $panel = $this->data->get_commitments_panel($child_id, (int) get_current_user_id());
+        if (!$panel) return;
+        $home = home_url('/');
+        $card = function ($c, $show_link) use ($home) {
+            $date = !empty($c['checked_in_at']) ? mysql2date(get_option('date_format'), $c['checked_in_at']) : '';
+            ?>
+            <li class="mfsd-pp-commit__item">
+                <div class="mfsd-pp-commit__title"><?php echo esc_html($c['title']); ?></div>
+                <div class="mfsd-pp-commit__meta">
+                    <?php echo esc_html($c['source_label']); ?><?php if ($date): ?> · <?php echo esc_html($date); ?><?php endif; ?>
+                </div>
+                <?php if (!empty($c['checkin_text'])): ?>
+                    <blockquote class="mfsd-pp-commit__quote">"<?php echo esc_html($c['checkin_text']); ?>"</blockquote>
+                <?php endif; ?>
+                <?php if ($show_link): ?>
+                    <a class="mfsd-pp-commit__link" href="<?php echo esc_url($home); ?>">Confirm on your home screen →</a>
+                <?php endif; ?>
+            </li>
+            <?php
+        };
+        ?>
+        <section class="mfsd-pp-commit" aria-label="Commitments">
+            <div class="mfsd-pp-commit__head">
+                <h3 class="mfsd-pp-commit__heading">✅ Commitments</h3>
+                <p class="mfsd-pp-commit__counts">
+                    <?php echo (int) $panel['open']; ?> card<?php echo $panel['open'] === 1 ? '' : 's'; ?> open ·
+                    <a href="<?php echo esc_url($home); ?>"><?php echo (int) $panel['done']; ?> done</a>
+                </p>
+            </div>
+            <?php if ($panel['waiting']): ?>
+                <h4 class="mfsd-pp-commit__sub">Waiting for you</h4>
+                <ul class="mfsd-pp-commit__list">
+                    <?php foreach ($panel['waiting'] as $c) $card($c, true); ?>
+                </ul>
+            <?php endif; ?>
+            <?php if ($panel['talk']): ?>
+                <h4 class="mfsd-pp-commit__sub">You asked to talk about</h4>
+                <ul class="mfsd-pp-commit__list">
+                    <?php foreach ($panel['talk'] as $c) $card($c, true); ?>
+                </ul>
+            <?php endif; ?>
+        </section>
         <?php
     }
 
@@ -556,6 +608,8 @@ class MFSD_Parent_Portal_Renderer {
             case 'rag_week_2':
             case 'rag_week_3':             $this->render_rag_results($activity);              break;
             case 'super_strengths':        $this->render_super_strengths_results($activity);  break;
+            case 'wider_interests':
+            case 'dream_life':             $this->render_summary_line_results($activity);     break;
             default: echo '<p>' . ($this->viewer_role === 'student' ? 'You\'ve completed this activity.' : 'Activity completed.') . '</p>';
         }
         return ob_get_clean();
@@ -616,7 +670,25 @@ class MFSD_Parent_Portal_Renderer {
         <?php
     }
 
+    /** Wider Interests / Dream Life: the status line only — results live in the task's own tabs. */
+    private function render_summary_line_results($activity) {
+        ?>
+        <p style="margin:0!important;font-size:14px!important;color:#374151!important;">
+            <?php echo esc_html($activity['progress_text'] ?? 'Completed'); ?>
+        </p>
+        <?php
+    }
+
     private function render_junk_jobs_results($activity) {
+        // Guessing-game gate (DJJ §17.6): no job counts or "Top dream" until this parent has played.
+        if (!empty($activity['gated'])) {
+            ?>
+            <p style="margin:0!important;font-size:14px!important;color:#374151!important;">
+                <?php echo esc_html($activity['progress_text']); ?>
+            </p>
+            <?php
+            return;
+        }
         // Results live in the task itself (child's view + Parent view tabs) — the card links there.
         $dreams = $activity['dream_jobs'] ?? [];
         $jobs   = $activity['jobs'] ?? [];
@@ -630,6 +702,9 @@ class MFSD_Parent_Portal_Renderer {
                 <?php if (!empty($dreams[0])): ?>&nbsp;·&nbsp; Top dream: <strong><?php echo esc_html($dreams[0]); ?></strong><?php endif; ?>
             <?php endif; ?>
         </p>
+        <?php if (!$s && !empty($activity['guess_text'])): ?>
+            <p style="margin:6px 0 0!important;font-size:13px!important;color:#374151!important;"><?php echo esc_html($activity['guess_text']); ?></p>
+        <?php endif; ?>
         <?php if (!$s && empty($activity['legacy'])): ?>
             <p style="margin:6px 0 0!important;font-size:13px!important;color:#6B7280!important;">Open to see their results and Steve's parent summary.</p>
         <?php endif; ?>

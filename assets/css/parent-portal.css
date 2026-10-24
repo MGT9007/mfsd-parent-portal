@@ -246,3 +246,86 @@
 .mfsd-pp__week-title {
     color: var(--pp-gray-800) !important;
 }
+/* ── 5.0.0: Commitments panel (spec v4.5 §3) ───────────────────────────── */
+.mfsd-pp-commit {
+    background: #fff !important;
+    border: 1px solid #E5E7EB !important;
+    border-left: 4px solid #10B981 !important;
+    border-radius: 12px !important;
+    padding: 16px !important;
+    margin: 0 0 24px 0 !important;
+}
+.mfsd-pp-commit__head {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: baseline !important;
+    justify-content: space-between !important;
+    gap: 8px !important;
+}
+.mfsd-pp-commit__heading {
+    margin: 0 !important;
+    font-size: 18px !important;
+    font-weight: 700 !important;
+    color: #1F2937 !important;
+}
+.mfsd-pp-commit__counts {
+    margin: 0 !important;
+    font-size: 14px !important;
+    color: #6B7280 !important;
+}
+.mfsd-pp-commit__counts a { color: #4F46E5 !important; font-weight: 600 !important; }
+.mfsd-pp-commit__sub {
+    margin: 16px 0 8px 0 !important;
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    color: #374151 !important;
+    text-transform: uppercase !important;
+    letter-spacing: .04em !important;
+}
+.mfsd-pp-commit__list {
+    list-style: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: grid !important;
+    gap: 10px !important;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)) !important;
+}
+.mfsd-pp-commit__item {
+    background: #F9FAFB !important;
+    border: 1px solid #F3F4F6 !important;
+    border-radius: 8px !important;
+    padding: 12px !important;
+    margin: 0 !important;
+    min-width: 0 !important;
+}
+.mfsd-pp-commit__title {
+    font-size: 15px !important;
+    font-weight: 600 !important;
+    color: #1F2937 !important;
+    overflow-wrap: anywhere !important;
+}
+.mfsd-pp-commit__meta { font-size: 13px !important; color: #6B7280 !important; margin-top: 2px !important; }
+.mfsd-pp-commit__quote {
+    margin: 8px 0 0 0 !important;
+    padding: 6px 10px !important;
+    border-left: 3px solid #10B981 !important;
+    font-size: 14px !important;
+    font-style: italic !important;
+    color: #374151 !important;
+    overflow-wrap: anywhere !important;
+}
+.mfsd-pp-commit__link {
+    display: inline-block !important;
+    margin-top: 8px !important;
+    min-height: 44px !important;
+    line-height: 44px !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    color: #4F46E5 !important;
+    text-decoration: none !important;
+}
+@media (max-width: 480px) {
+    .mfsd-pp-commit { padding: 12px !important; }
+    .mfsd-pp-commit__list { grid-template-columns: 1fr !important; }
+    .mfsd-pp-commit__head { flex-direction: column !important; align-items: flex-start !important; }
+}
