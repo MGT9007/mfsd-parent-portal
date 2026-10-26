@@ -576,15 +576,21 @@ class MFSD_Parent_Portal_Data {
             return ['status' => 'not_started', 'progress' => 0, 'progress_max' => 3, 'progress_text' => 'Not started'];
         }
         $row = $this->wpdb->get_row($this->wpdb->prepare(
-            "SELECT loves_ranked, spark_commitment_id, completed_at FROM {$table} WHERE user_id = %d LIMIT 1",
+            "SELECT status, loves_ranked, spark_commitment_id, completed_at FROM {$table} WHERE user_id = %d LIMIT 1",
             $student_id
         ));
         if (!$row) {
             return ['status' => 'not_started', 'progress' => 0, 'progress_max' => 3, 'progress_text' => 'Not started'];
         }
         if (empty($row->completed_at)) {
-            $loves = json_decode((string) $row->loves_ranked, true);
-            if (!empty($loves) && empty($row->spark_commitment_id)) {
+            // 5.1.0: read Wider Interests' own status column (swiping, custom, shortlist, deepdive, spark,
+            // summary). 5.0.0 guessed from loves_ranked, so a child with no loves, or one whose Spark was
+            // saved while Steve's summary was still to come, showed "Exploring interests".
+            $st = (string) ($row->status ?? '');
+            if ($st === 'summary') {
+                return ['status' => 'in_progress', 'progress' => 2, 'progress_max' => 3, 'progress_text' => 'Spark chosen, nearly done'];
+            }
+            if (in_array($st, ['deepdive', 'spark'], true)) {
                 return ['status' => 'in_progress', 'progress' => 2, 'progress_max' => 3, 'progress_text' => 'Choosing their Spark'];
             }
             return ['status' => 'in_progress', 'progress' => 1, 'progress_max' => 3, 'progress_text' => 'Exploring interests'];
@@ -703,11 +709,26 @@ class MFSD_Parent_Portal_Data {
             if (isset($breakdown[$a->answer])) $breakdown[$a->answer]++;
         }
         $is_complete = $count >= $expected;
+        $status      = $is_complete ? 'completed' : 'in_progress';
+        $text        = $is_complete ? 'Completed' : "{$count} of {$expected} questions";
+        // 5.1.0: Weekly RAG 8.0.0 completes a week only once the plan for next week is saved. Its stage
+        // ('not_started' | 'in_progress' | 'plan' | 'completed') is the source of truth when available.
+        if (function_exists('mfsd_rag_week_stage')) {
+            $stage = mfsd_rag_week_stage((int) $student_id, (int) $week_num);
+            if (($stage['stage'] ?? '') === 'plan') {
+                $status = 'in_progress'; $count = max($count, $expected); $text = "Choosing next week's plan";
+            } elseif (($stage['stage'] ?? '') === 'completed') {
+                $status = 'completed'; $text = 'Completed';
+            } elseif (($stage['stage'] ?? '') === 'in_progress') {
+                $status = 'in_progress';
+                if ($is_complete) $text = 'In progress';
+            }
+        }
         return [
-            'status'        => $is_complete ? 'completed' : 'in_progress',
-            'progress'      => $count,
+            'status'        => $status,
+            'progress'      => min($count, $expected),
             'progress_max'  => $expected,
-            'progress_text' => $is_complete ? 'Completed' : "{$count} of {$expected} questions",
+            'progress_text' => $text,
             'answers'       => $answers,
             'total_score'   => $total_score,
             'breakdown'     => $breakdown,
